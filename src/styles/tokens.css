@@ -1,0 +1,74 @@
+:root {
+  /* ==========================================================
+     PALETTE (from CHANGE_THEME.md PRD v2.0)
+     Tegal EcoSense Observatory
+     ========================================================== */
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+
+  /* Maritime & Urban Tegal Identity */
+  --brand: #0284c7;       /* Royal Coastal Cyan */
+  --brand-deep: #08192e;  /* Deep Maritime Navy (Warna dasar Hero, Stats, Footer) */
+  --brand-light: #38bdf8; /* Light blue accent & focus ring */
+  --accent-teal: #0d9488; /* Rona vegetasi ruang terbuka hijau */
+
+  /* Surface & Typography */
+  --surface: #f4f5f7;     /* Off-white section background */
+  --surface-card: #ffffff;
+  --ink: #0a0e17;         /* Near-black headings */
+  --ink-soft: #64748b;    /* Muted body / technical subtext */
+  --ghost: #cbd5e1;       /* Oversized ghost typography */
+  --hairline: #e2e8f0;    /* Subtle technical borders */
+  --on-brand: #ffffff;    /* Text on navy */
+
+  /* Radii */
+  --radius-card: 1.5rem;    /* 24px */
+  --radius-card-lg: 2rem;   /* 32px */
+  --radius-pill: 62.5rem;   /* 9999px */
+  --radius-xl: 0.75rem;     /* 12px */
+
+  /* ==========================================================
+     MAPPINGS FOR TELEMETRY DASHBOARD
+     ========================================================== */
+  --bg-abyss: #040c17;       /* deep maritime abyss */
+  --bg-hero: #08192e;        /* brand-deep navy card */
+  --bg-surface-1: rgba(8, 25, 46, 0.75);
+  --bg-surface-2: rgba(8, 25, 46, 0.90);
+  --bg-surface-elevated: #08192e;
+
+  /* Borders & Dividers */
+  --border-technical: rgba(255, 255, 255, 0.15);
+  --border-technical-hover: rgba(56, 189, 248, 0.55);
+  --border-glow-active: rgba(56, 189, 248, 0.75);
+  --border-radius-sm: 0.5rem;
+  --border-radius-md: var(--radius-xl);
+  --border-radius-lg: var(--radius-card);
+
+  /* Telemetry Signal Tokens */
+  --signal-temp: #f97316;
+  --signal-temp-glow: rgba(249, 115, 22, 0.25);
+  --signal-humid: #38bdf8;
+  --signal-humid-glow: rgba(56, 189, 248, 0.30);
+  --signal-gas: #0284c7;
+  --signal-gas-glow: rgba(2, 132, 199, 0.30);
+
+  /* System States */
+  --state-online: #10b981;
+  --state-online-glow: rgba(16, 185, 129, 0.35);
+  --state-connecting: #38bdf8;
+  --state-stale: #eab308;
+  --state-stale-glow: rgba(234, 179, 8, 0.30);
+  --state-offline: #f43f5e;
+  --state-offline-glow: rgba(244, 63, 94, 0.35);
+
+  /* Typography Colors */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.78);
+  --text-muted: rgba(255, 255, 255, 0.55);
+  --text-dim: rgba(255, 255, 255, 0.35);
+  --text-highlight: #38bdf8;
+
+  /* Fonts */
+  --font-sans: 'Onest', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+}

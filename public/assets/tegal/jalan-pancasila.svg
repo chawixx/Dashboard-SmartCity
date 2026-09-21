@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="100%" height="100%">
+  <defs>
+    <linearGradient id="pancasilaBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#08192e"/>
+      <stop offset="50%" stop-color="#0a2a42"/>
+      <stop offset="100%" stop-color="#14213d"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#pancasilaBg)"/>
+  
+  <!-- Perspective Pedestrian Corridor (Jalan Pancasila) -->
+  <path d="M 150,1000 L 350,450 L 450,450 L 650,1000 Z" fill="#0f172a" opacity="0.9"/>
+  <!-- Street Center Guideline -->
+  <line x1="400" y1="450" x2="400" y2="1000" stroke="#38bdf8" stroke-width="2" stroke-dasharray="16 12" opacity="0.5"/>
+
+  <!-- Vintage Street Lamps Silhouettes & Glows -->
+  <g stroke="#38bdf8" stroke-width="2" fill="none">
+    <!-- Left Lamp -->
+    <path d="M 280,1000 L 290,650 L 270,630 L 290,630"/>
+    <circle cx="270" cy="630" r="18" fill="#38bdf8" fill-opacity="0.25" stroke="#38bdf8"/>
+    <!-- Right Lamp -->
+    <path d="M 520,1000 L 510,650 L 530,630 L 510,630"/>
+    <circle cx="530" cy="630" r="18" fill="#38bdf8" fill-opacity="0.25" stroke="#38bdf8"/>
+  </g>
+
+  <!-- Title Overlay -->
+  <text x="400" y="240" font-family="'Onest', sans-serif" font-size="28" font-weight="600" fill="#ffffff" text-anchor="middle" letter-spacing="4">
+    JALAN PANCASILA
+  </text>
+  <text x="400" y="280" font-family="'JetBrains Mono', monospace" font-size="14" fill="#38bdf8" text-anchor="middle" letter-spacing="2">
+    KORIDOR PEDESTRIAN TIMUR • ALUN-ALUN
+  </text>
+</svg>

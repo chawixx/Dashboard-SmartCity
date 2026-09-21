@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#051326"/>
+      <stop offset="35%" stop-color="#0a2544"/>
+      <stop offset="65%" stop-color="#0d3b66"/>
+      <stop offset="85%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="groundGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0d4a3e"/>
+      <stop offset="50%" stop-color="#072d25"/>
+      <stop offset="100%" stop-color="#031713"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="60%" r="50%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.6"/>
+      <stop offset="40%" stop-color="#0284c7" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#051326" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="domeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d9488"/>
+      <stop offset="50%" stop-color="#0f766e"/>
+      <stop offset="100%" stop-color="#042f2e"/>
+    </linearGradient>
+    <linearGradient id="buildingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sky Backdrop -->
+  <rect width="1920" height="1080" fill="url(#skyGrad)"/>
+  <circle cx="960" cy="550" r="600" fill="url(#sunGlow)"/>
+
+  <!-- Stars / Particles -->
+  <g fill="#ffffff" opacity="0.4">
+    <circle cx="200" cy="150" r="1.5"/>
+    <circle cx="450" cy="80" r="1.2"/>
+    <circle cx="720" cy="220" r="2"/>
+    <circle cx="1200" cy="110" r="1.5"/>
+    <circle cx="1550" cy="180" r="1.8"/>
+    <circle cx="1780" cy="90" r="1.2"/>
+    <circle cx="980" cy="160" r="1.4"/>
+  </g>
+
+  <!-- Distant City Skyline & Pantura Horizon -->
+  <path d="M0,720 L150,700 L250,715 L350,680 L420,710 L600,695 L750,720 L900,690 L1100,715 L1250,685 L1400,710 L1600,695 L1750,715 L1920,700 L1920,1080 L0,1080 Z" fill="#08182b" opacity="0.85"/>
+
+  <!-- Masjid Agung Kota Tegal Silhouette & Illumination -->
+  <!-- Main Mosque Dome -->
+  <path d="M 860,670 C 860,540 960,490 960,490 C 960,490 1060,540 1060,670 Z" fill="url(#domeGrad)"/>
+  <circle cx="960" cy="480" r="6" fill="#38bdf8"/>
+  <line x1="960" y1="480" x2="960" y2="465" stroke="#38bdf8" stroke-width="2"/>
+  
+  <!-- Mosque Building Body -->
+  <rect x="840" y="670" width="240" height="90" fill="url(#buildingGrad)"/>
+  <!-- Arches -->
+  <g fill="#38bdf8" opacity="0.5">
+    <path d="M 880,720 Q 895,690 910,720 Z"/>
+    <path d="M 945,720 Q 960,685 975,720 Z"/>
+    <path d="M 1010,720 Q 1025,690 1040,720 Z"/>
+  </g>
+
+  <!-- Left Minaret -->
+  <rect x="790" y="520" width="24" height="240" fill="url(#buildingGrad)"/>
+  <path d="M 786,520 Q 802,460 818,520 Z" fill="url(#domeGrad)"/>
+  <circle cx="802" cy="455" r="4" fill="#38bdf8"/>
+  
+  <!-- Right Minaret -->
+  <rect x="1106" y="520" width="24" height="240" fill="url(#buildingGrad)"/>
+  <path d="M 1102,520 Q 1118,460 1134,520 Z" fill="url(#domeGrad)"/>
+  <circle cx="1118" cy="455" r="4" fill="#38bdf8"/>
+
+  <!-- Surrounding Trees & Vegetation -->
+  <ellipse cx="650" cy="740" rx="80" ry="60" fill="#062e24"/>
+  <ellipse cx="730" cy="750" rx="90" ry="70" fill="#0a3f31"/>
+  <ellipse cx="1200" cy="740" rx="85" ry="65" fill="#062e24"/>
+  <ellipse cx="1280" cy="750" rx="95" ry="75" fill="#0a3f31"/>
+
+  <!-- Alun-Alun Synthetic Grass Plaza (Ground Layer) -->
+  <path d="M 0,760 Q 960,740 1920,760 L 1920,1080 L 0,1080 Z" fill="url(#groundGrad)"/>
+  
+  <!-- Curved Pedestrian Paths (Jalan Pancasila & Plaza Walkways) -->
+  <path d="M 0,980 C 600,850 1320,850 1920,980 L 1920,1080 L 0,1080 Z" fill="#091d29" opacity="0.95"/>
+  <path d="M 400,1080 C 800,880 1120,880 1520,1080 Z" fill="#0d9488" opacity="0.3"/>
+
+  <!-- Environmental Atmosphere Glow Lines -->
+  <path d="M 100,860 Q 960,820 1820,860" stroke="#38bdf8" stroke-width="1.5" fill="none" opacity="0.4" stroke-dasharray="8 6"/>
+  <path d="M 250,910 Q 960,880 1670,910" stroke="#0284c7" stroke-width="1" fill="none" opacity="0.3"/>
+</svg>

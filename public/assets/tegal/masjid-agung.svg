@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="100%" height="100%">
+  <defs>
+    <linearGradient id="masjidBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#051326"/>
+      <stop offset="60%" stop-color="#0a2a44"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#masjidBg)"/>
+  
+  <!-- Great Mosque Dome -->
+  <path d="M 250,650 C 250,420 400,340 400,340 C 400,340 550,420 550,650 Z" fill="#0f766e" opacity="0.85"/>
+  <circle cx="400" cy="330" r="8" fill="#38bdf8"/>
+  <line x1="400" y1="330" x2="400" y2="305" stroke="#38bdf8" stroke-width="3"/>
+
+  <!-- Left & Right Minarets -->
+  <rect x="160" y="420" width="35" height="350" fill="#0b2438"/>
+  <path d="M 155,420 Q 177.5,350 200,420 Z" fill="#0d9488"/>
+  
+  <rect x="605" y="420" width="35" height="350" fill="#0b2438"/>
+  <path d="M 600,420 Q 622.5,350 645,420 Z" fill="#0d9488"/>
+
+  <!-- Base Structure -->
+  <rect x="220" y="650" width="360" height="150" fill="#081829"/>
+  <!-- Islamic Arches -->
+  <g fill="#38bdf8" opacity="0.4">
+    <path d="M 270,740 Q 300,680 330,740 Z"/>
+    <path d="M 370,740 Q 400,670 430,740 Z"/>
+    <path d="M 470,740 Q 500,680 530,740 Z"/>
+  </g>
+
+  <!-- Title Overlay -->
+  <text x="400" y="220" font-family="'Onest', sans-serif" font-size="28" font-weight="600" fill="#ffffff" text-anchor="middle" letter-spacing="4">
+    MASJID AGUNG KOTA TEGAL
+  </text>
+  <text x="400" y="260" font-family="'JetBrains Mono', monospace" font-size="14" fill="#38bdf8" text-anchor="middle" letter-spacing="2">
+    IKON SPIRITUAL &amp; RUANG PUBLIK BARAT
+  </text>
+</svg>

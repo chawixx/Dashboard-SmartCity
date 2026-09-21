@@ -1,0 +1,35 @@
+/**
+ * Telemetry Data Types and Validation Interfaces
+ * Strictly adheres to PRD Sections 7, 8, 14, 17, and MQTT-CONTRACT.md Section 4
+ */
+
+export interface TelemetryData {
+  device_id: string;
+  sequence: number;
+  timestamp: number;
+  uptime_s: number;
+  temperature_c: number;
+  humidity_percent: number;
+  mq135_raw: number;
+  mq135_adc_mv: number;
+  mq135_sensor_mv: number;
+  wifi_rssi_dbm: number;
+}
+
+export type DeviceStatus = 'online' | 'offline' | 'unknown';
+
+export type ParseResult<T> =
+  | { success: true; data: T }
+  | { success: false; error: string; rawPayload: string };
+
+/**
+ * Acceptable physical validation limits for hardware telemetry
+ */
+export const TELEMETRY_LIMITS = {
+  temperature_c: { min: -40, max: 85 },
+  humidity_percent: { min: 0, max: 100 },
+  mq135_raw: { min: 0, max: 4095 },
+  mq135_adc_mv: { min: 0, max: 3600 },
+  mq135_sensor_mv: { min: 0, max: 6000 },
+  wifi_rssi_dbm: { min: -120, max: 0 },
+} as const;
