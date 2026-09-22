@@ -150,6 +150,52 @@ describe('Telemetry Parser (PRD Section 7, 8, 17)', () => {
       expect(result.data.humidity_percent).toBe(70.0);
     }
   });
+
+  it('successfully parses rain sensor metrics when present in payload', () => {
+    const rainPayload = JSON.stringify({
+      device_id: 'esp32s3-ABCD12345678',
+      sequence: 55,
+      timestamp: 1790041200,
+      uptime_s: 410,
+      temperature_c: 26.2,
+      humidity_percent: 85.4,
+      mq135_raw: 1400,
+      mq135_adc_mv: 1120,
+      mq135_sensor_mv: 1866.67,
+      rain_raw: 1250,
+      rain_status: 'Hujan Lebat',
+      is_raining: true,
+      wifi_rssi_dbm: -58,
+    });
+    const result = parseTelemetryPayload(rainPayload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.rain_raw).toBe(1250);
+      expect(result.data.rain_status).toBe('Hujan Lebat');
+      expect(result.data.is_raining).toBe(true);
+    }
+  });
+
+  it('rejects invalid rain_raw out of 12-bit ADC range', () => {
+    const invalidRainPayload = JSON.stringify({
+      device_id: 'esp32s3-ABCD12345678',
+      sequence: 56,
+      timestamp: 1790041200,
+      uptime_s: 415,
+      temperature_c: 26.2,
+      humidity_percent: 85.4,
+      mq135_raw: 1400,
+      mq135_adc_mv: 1120,
+      mq135_sensor_mv: 1866.67,
+      rain_raw: 5000, // Invalid: > 4095
+      wifi_rssi_dbm: -58,
+    });
+    const result = parseTelemetryPayload(invalidRainPayload);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('rain_raw');
+    }
+  });
 });
 
 describe('Device Status Parser (PRD Section 14)', () => {

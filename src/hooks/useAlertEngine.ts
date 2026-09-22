@@ -3,7 +3,7 @@ import { type TelemetryData } from '../telemetry/types';
 
 export interface AlertItem {
   id: string;
-  type: 'temperature' | 'humidity' | 'gas' | 'stale';
+  type: 'temperature' | 'humidity' | 'gas' | 'stale' | 'rain';
   level: 'warning' | 'danger';
   title: string;
   message: string;
@@ -70,6 +70,19 @@ export function evaluateTelemetryViolations(
         title: 'Akumulasi Gas / Asap Terdeteksi',
         message: `Pembacaan analog MQ135 mencapai ${telemetry.mq135_raw} ADC (${telemetry.mq135_sensor_mv.toFixed(0)} mV), menunjukkan konsentrasi emisi atau asap tinggi di area stasiun.`,
         metricValue: `${telemetry.mq135_raw} ADC`,
+      };
+    }
+
+    // 4. Check Rain Sensor (Pin 8)
+    if (telemetry.is_raining || (telemetry.rain_raw !== undefined && telemetry.rain_raw <= 3500)) {
+      const isHeavy = telemetry.rain_raw !== undefined && telemetry.rain_raw <= 1500;
+      const isModerate = telemetry.rain_raw !== undefined && telemetry.rain_raw <= 2500;
+      violations['rain_alert'] = {
+        type: 'rain',
+        level: isHeavy ? 'danger' : 'warning',
+        title: isHeavy ? 'Presipitasi Hujan Lebat' : isModerate ? 'Hujan Sedang Terdeteksi' : 'Gerimis Terdeteksi',
+        message: `Sensor hujan (Pin 8) mendeteksi presipitasi (${telemetry.rain_status || 'Hujan'}, ${telemetry.rain_raw ?? '--'} ADC). Waspada permukaan rumput sintetis dan trotoar Alun-Alun menjadi licin.`,
+        metricValue: telemetry.rain_status ?? (telemetry.rain_raw ? `${telemetry.rain_raw} ADC` : 'HUJAN'),
       };
     }
   }

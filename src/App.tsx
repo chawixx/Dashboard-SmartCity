@@ -184,6 +184,9 @@ export default function App() {
       mq135_raw: Math.floor(1650 + (Math.random() * 200 - 100)),
       mq135_adc_mv: +(1320 + (Math.random() * 100 - 50)).toFixed(1),
       mq135_sensor_mv: +(2210 + (Math.random() * 150 - 75)).toFixed(1),
+      rain_raw: 3850,
+      rain_status: 'Kering',
+      is_raining: false,
       wifi_rssi_dbm: Math.floor(-56 + (Math.random() * 10 - 5)),
     });
     publish(simTelemetryTopic, payload);
@@ -197,6 +200,7 @@ export default function App() {
       currentSeq++;
       baseUptime += 2;
       const offsetSec = i * 2;
+      const isWet = i % 4 >= 2;
       const payload = JSON.stringify({
         device_id: simDeviceId,
         sequence: currentSeq,
@@ -207,6 +211,9 @@ export default function App() {
         mq135_raw: Math.floor(1680 + Math.sin(i / 1.5) * 220),
         mq135_adc_mv: +(1340 + Math.sin(i) * 120).toFixed(1),
         mq135_sensor_mv: +(2230 + Math.sin(i) * 160).toFixed(1),
+        rain_raw: isWet ? 2200 : 3900,
+        rain_status: isWet ? 'Hujan Sedang' : 'Kering',
+        is_raining: isWet,
         wifi_rssi_dbm: Math.floor(-54 - (i % 3) * 2),
       });
       publish(simTelemetryTopic, payload);
@@ -234,6 +241,9 @@ export default function App() {
       mq135_raw: 1650,
       mq135_adc_mv: 1320.0,
       mq135_sensor_mv: 2210.0,
+      rain_raw: 3850,
+      rain_status: 'Kering',
+      is_raining: false,
       wifi_rssi_dbm: -55,
     });
     publish(simTelemetryTopic, payload);
@@ -251,6 +261,9 @@ export default function App() {
       mq135_raw: 1580,
       mq135_adc_mv: 1280.0,
       mq135_sensor_mv: 2190.0,
+      rain_raw: 3850,
+      rain_status: 'Kering',
+      is_raining: false,
       wifi_rssi_dbm: -58,
     });
     publish(simTelemetryTopic, payload);

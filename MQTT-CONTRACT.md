@@ -89,6 +89,9 @@ aethersense/{device_id}/telemetry
   "mq135_raw": 1852,
   "mq135_adc_mv": 1478,
   "mq135_sensor_mv": 2463.33,
+  "rain_raw": 3950,
+  "rain_status": "Kering",
+  "is_raining": false,
   "wifi_rssi_dbm": -54
 }
 ```
@@ -106,10 +109,15 @@ aethersense/{device_id}/telemetry
 | `mq135_raw` | `number` | ADC count | $0 \dots 4095$ | Raw 12-bit analog reading from ESP32 ADC1. |
 | `mq135_adc_mv` | `number` | mV | $0 \dots 3300$ | Calibrated voltage at ESP32 input pin. |
 | `mq135_sensor_mv`| `number` | mV | $0 \dots 5000$ | Inferred voltage at MQ-135 sensor output. |
+| `rain_raw` | `number` (opt)| ADC count | $0 \dots 4095$ | Raw 12-bit analog reading from Rain Sensor (Pin 8, lower = wetter). |
+| `rain_status` | `string` (opt)| — | `Kering`, `Gerimis`, `Hujan Sedang`, `Hujan Lebat` | Human-readable precipitation classification. |
+| `is_raining` | `boolean` (opt)| — | `true` / `false` | Precipitation presence flag based on threshold. |
 | `wifi_rssi_dbm` | `number` | dBm | $-100 \dots 0$ | Wi-Fi Received Signal Strength Indicator. |
 
 ### 4.4 TypeScript Interface
 ```typescript
+export type RainStatus = 'Kering' | 'Gerimis' | 'Hujan Sedang' | 'Hujan Lebat';
+
 export interface TelemetryData {
   device_id: string;
   sequence: number;
@@ -121,6 +129,9 @@ export interface TelemetryData {
   mq135_adc_mv: number;
   mq135_sensor_mv: number;
   wifi_rssi_dbm: number;
+  rain_raw?: number;
+  rain_status?: RainStatus;
+  is_raining?: boolean;
 }
 
 export type DeviceStatusPayload = 'online' | 'offline';

@@ -87,4 +87,19 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
     expect(violations['stale_node'].type).toBe('stale');
     expect(violations['stale_node'].metricValue).toBe('STALE');
   });
+
+  it('detects rain precipitation alert when is_raining is true or rain_raw <= 3500', () => {
+    const rainTelemetry: TelemetryData = {
+      ...normalTelemetry,
+      rain_raw: 1200,
+      rain_status: 'Hujan Lebat',
+      is_raining: true,
+    };
+
+    const violations = evaluateTelemetryViolations(rainTelemetry, false);
+    expect(violations['rain_alert']).toBeDefined();
+    expect(violations['rain_alert'].type).toBe('rain');
+    expect(violations['rain_alert'].level).toBe('danger');
+    expect(violations['rain_alert'].title).toBe('Presipitasi Hujan Lebat');
+  });
 });

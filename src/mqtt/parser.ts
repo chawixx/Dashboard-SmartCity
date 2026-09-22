@@ -7,6 +7,7 @@ import {
   type TelemetryData,
   type DeviceStatus,
   type ParseResult,
+  type RainStatus,
   TELEMETRY_LIMITS,
 } from '../telemetry/types';
 
@@ -156,6 +157,17 @@ export function parseTelemetryPayload(
     };
   }
 
+  // 4. Validate optional rain sensor readings (Pin 8)
+  if (obj.rain_raw !== undefined) {
+    if (!isValidNumber(obj.rain_raw, TELEMETRY_LIMITS.rain_raw.min, TELEMETRY_LIMITS.rain_raw.max)) {
+      return {
+        success: false,
+        error: `Invalid "rain_raw": ${obj.rain_raw} (expected ${TELEMETRY_LIMITS.rain_raw.min}..${TELEMETRY_LIMITS.rain_raw.max} ADC count)`,
+        rawPayload: raw,
+      };
+    }
+  }
+
   // Construct typed and clean TelemetryData object
   const validTelemetry: TelemetryData = {
     device_id: deviceId,
@@ -169,6 +181,18 @@ export function parseTelemetryPayload(
     mq135_sensor_mv: Math.round(obj.mq135_sensor_mv * 100) / 100,
     wifi_rssi_dbm: Math.floor(obj.wifi_rssi_dbm),
   };
+
+  if (obj.rain_raw !== undefined) {
+    validTelemetry.rain_raw = Math.floor(obj.rain_raw as number);
+  }
+
+  if (typeof obj.rain_status === 'string' && obj.rain_status.trim().length > 0) {
+    validTelemetry.rain_status = obj.rain_status.trim() as RainStatus;
+  }
+
+  if (typeof obj.is_raining === 'boolean') {
+    validTelemetry.is_raining = obj.is_raining;
+  }
 
   return {
     success: true,

@@ -3,6 +3,8 @@
  * Strictly adheres to PRD Sections 7, 8, 14, 17, and MQTT-CONTRACT.md Section 4
  */
 
+export type RainStatus = 'Kering' | 'Gerimis' | 'Hujan Sedang' | 'Hujan Lebat';
+
 export interface TelemetryData {
   device_id: string;
   sequence: number;
@@ -14,6 +16,9 @@ export interface TelemetryData {
   mq135_adc_mv: number;
   mq135_sensor_mv: number;
   wifi_rssi_dbm: number;
+  rain_raw?: number;
+  rain_status?: RainStatus;
+  is_raining?: boolean;
 }
 
 export type DeviceStatus = 'online' | 'offline' | 'unknown';
@@ -32,4 +37,5 @@ export const TELEMETRY_LIMITS = {
   mq135_adc_mv: { min: 0, max: 3600 },
   mq135_sensor_mv: { min: 0, max: 6000 },
   wifi_rssi_dbm: { min: -120, max: 0 },
+  rain_raw: { min: 0, max: 4095 },
 } as const;

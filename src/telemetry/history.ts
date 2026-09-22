@@ -13,6 +13,9 @@ export interface TelemetryHistoryPoint {
   mq135_raw: number;
   mq135_adc_mv: number;
   mq135_sensor_mv: number;
+  rain_raw?: number;
+  rain_status?: string;
+  is_raining?: boolean;
   formattedTime: string;
 }
 
@@ -120,6 +123,9 @@ export function createHistoryPoint(telemetry: TelemetryData): TelemetryHistoryPo
     mq135_raw: telemetry.mq135_raw,
     mq135_adc_mv: telemetry.mq135_adc_mv,
     mq135_sensor_mv: telemetry.mq135_sensor_mv,
+    rain_raw: telemetry.rain_raw,
+    rain_status: telemetry.rain_status,
+    is_raining: telemetry.is_raining,
     formattedTime,
   };
 }

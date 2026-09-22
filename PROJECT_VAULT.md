@@ -16,6 +16,7 @@
    - [Epoch II: Transformasi Urban Observatory (Redesain Editorial PRD v2.0)](#epoch-ii-transformasi-urban-observatory-redesain-editorial-prd-v20)
    - [Epoch III: Optimasi Mobile, Asset Fotografi & Rantai Multi-Format](#epoch-iii-optimasi-mobile-asset-fotografi--rantai-multi-format)
    - [Epoch IV: Interaktivitas 3D Spatial Deck & Menu Hamburger "Air Menetes"](#epoch-iv-interaktivitas-3d-spatial-deck--menu-hamburger-air-menetes)
+   - [Epoch V: Integrasi Rain Sensor (GPIO 8 / ADC1) & Sistem Peringatan Presipitasi](#epoch-v-integrasi-rain-sensor-gpio-8--adc1--sistem-peringatan-presipitasi)
 3. [Manifestasi Struktur Berkas Proyek](#3-manifestasi-struktur-berkas-proyek)
 4. [Matriks Verifikasi, Keamanan & Pengujian Kualitas](#4-matriks-verifikasi-keamanan--pengujian-kualitas)
 5. [Spesifikasi Hardware & Kontrak Komunikasi Edge](#5-spesifikasi-hardware--kontrak-komunikasi-edge)
@@ -178,6 +179,32 @@ Berdasarkan dokumen arahan [`CHANGE_THEME.md`](file:///home/narr/Projects/SmartC
 
 ---
 
+### Epoch V: Integrasi Rain Sensor (GPIO 8 / ADC1) & Sistem Peringatan Presipitasi
+
+1. **Pemilihan Pin Bebas Interferensi Wi-Fi (Hardware ADC1):**
+   - Mengalokasikan pin analog **GPIO 8** pada ESP32-S3 yang terhubung langsung ke **ADC1 (`ADC1_CH7`)**.
+   - Menghindari kanal ADC2 (GPIO 11–18) yang mengalami tabrakan sinyal/disabilitas saat radio Wi-Fi aktif melakukan transmisi paket MQTT.
+2. **Implementasi Firmware ESP32-S3 (`SmartCIty-ESP32.ino`):**
+   - Menambahkan `#define RAIN_PIN 8` dengan konfigurasi `pinMode(RAIN_PIN, INPUT)` dan `analogSetPinAttenuation(RAIN_PIN, ADC_11db)`.
+   - Mengimplementasikan fungsi `readRainSensor()` dengan teknik *10-sample oversampling* (jeda 500µs) untuk memfilter fluktuasi riak tegangan analog.
+   - Mengonversi resistansi invers pelat sensor LM393 menjadi status cuaca terstandardisasi:
+     - `> 3500 ADC`: `"Kering"` (`is_raining: false`)
+     - `2500 – 3500 ADC`: `"Gerimis"` (`is_raining: true`)
+     - `1500 – 2500 ADC`: `"Hujan Sedang"` (`is_raining: true`)
+     - `<= 1500 ADC`: `"Hujan Lebat"` (`is_raining: true`)
+   - Memasukkan `"rain_raw"`, `"rain_status"`, dan `"is_raining"` ke payload JSON telemetri MQTT.
+3. **Pembaruan Kontrak Data & Parser Toleran:**
+   - Memperbarui [`MQTT-CONTRACT.md`](file:///home/narr/Projects/SmartCity/MQTT-CONTRACT.md) dan `src/telemetry/types.ts` dengan interface `RainStatus` dan batasan 12-bit (`0..4095`).
+   - Parser aman di `src/mqtt/parser.ts` mendukung *backward-compatibility* penuh (data lama tanpa sensor hujan tetap diterima tanpa error).
+4. **Engine Peringatan Dini & Dashboard Observatorium:**
+   - Menambahkan evaluator bahaya presipitasi di `src/hooks/useAlertEngine.ts` untuk memicu peringatan waspada permukaan licin saat hujan terdeteksi.
+   - Menambahkan ikon `CloudRain` pada toast notifikasi di `src/components/alerts/AlertToastContainer.tsx`.
+   - Menambahkan baris `#04: Presipitasi & Curah Hujan (Pin 8)` pada `TelemetryMatrixSection.tsx`.
+   - Menambahkan slide ke-4 otomatis pada hero telemetry card di `HeroSection.tsx`.
+   - Memperbarui simulator manual & burst generator di `src/App.tsx`.
+
+---
+
 ## 3. Manifestasi Struktur Berkas Proyek
 
 ```
@@ -284,16 +311,16 @@ SmartCity/
 
 | Kategori Pengujian | Instrumen | Hasil / Status | Keterangan |
 |---|---|---|---|
-| **Pemeriksaan Linter** | `oxlint` (116 rules) | **0 Warning, 0 Error** | Diuji pada 43 berkas dalam 92ms |
+| **Pemeriksaan Linter** | `oxlint` (116 rules) | **0 Warning, 0 Error** | Diuji pada 43 berkas dalam 149ms |
 | **Kompilasi TypeScript** | `tsc -b` | **0 Error** | Mode ketat (*strict mode*) aktif tanpa tipe implisit `any` |
-| **Unit Testing: Parser** | `vitest` | **12 / 12 Lulus** | Menguji JSON korup, batas suhu, kelembapan, gas |
+| **Unit Testing: Parser** | `vitest` | **14 / 14 Lulus** | Menguji JSON korup, batas suhu, kelembapan, gas, & rain sensor |
 | **Unit Testing: Store** | `vitest` | **8 / 8 Lulus** | Menguji paket duplikat, watchdog 15s, counter |
 | **Unit Testing: Ring Buffer** | `vitest` | **5 / 5 Lulus** | Menguji batas 300 sampel, $O(1)$ eviction |
 | **Unit Testing: MQTT Client** | `vitest` | **3 / 3 Lulus** | Menguji backoff reconnect, status transisi |
 | **Unit Testing: Security** | `vitest` | **5 / 5 Lulus** | Menguji sanitasi prototype pollution & data fiktif |
-| **Unit Testing: Alert Engine**| `vitest` | **7 / 7 Lulus** | Menguji persistensi alert & ambang batas bahaya |
-| **Total Test Suite** | `vitest run` | **40 / 40 Lulus (100%)** | Durasi eksekusi ~1.19 detik |
-| **Production Build** | `vite build` | **Sukses (1.02s)** | Menghasilkan bundel teroptimasi di direktori `dist/` |
+| **Unit Testing: Alert Engine**| `vitest` | **8 / 8 Lulus** | Menguji persistensi alert, ambang batas bahaya, & presipitasi hujan |
+| **Total Test Suite** | `vitest run` | **43 / 43 Lulus (100%)** | Durasi eksekusi ~1.34 detik |
+| **Production Build** | `vite build` | **Sukses (1.89s)** | Menghasilkan bundel teroptimasi di direktori `dist/` |
 
 ---
 
@@ -302,8 +329,9 @@ SmartCity/
 Antarmuka ini terhubung dengan firmware mikrokontroler di direktori [`SmartCIty-ESP32/SmartCIty-ESP32.ino`](file:///home/narr/Projects/SmartCity/SmartCIty-ESP32/SmartCIty-ESP32.ino):
 
 - **Mikrokontroler:** Espressif ESP32-S3 (Wi-Fi 2.4GHz 802.11 b/g/n)
-- **Sensor Suhu & Kelembapan:** Aosong DHT22 (AM2302) pada Pin GPIO 4
-- **Sensor Kualitas Udara:** Winsen MQ-135 pada Pin Analog GPIO 3 (ADC 12-bit, attenuasi 11dB)
+- **Sensor Suhu & Kelembapan:** Aosong DHT22 (AM2302) pada Pin GPIO 6
+- **Sensor Kualitas Udara:** Winsen MQ-135 pada Pin Analog GPIO 7 (ADC 12-bit ADC1, attenuasi 11dB, voltage divider 10k/15k)
+- **Sensor Hujan (Presipitasi):** LM393 Rain Plate pada Pin Analog GPIO 8 (ADC1 Channel 7, attenuasi 11dB)
 - **Topik MQTT Telemetri:** `aethersense/{device_id}/telemetry` (QoS 0, frekuensi interval 5000ms)
 - **Topik Status LWT:** `aethersense/{device_id}/status` (QoS 1, retain: true, LWT: `"offline"`)
 - **Struktur Payload Telemetri Standar:**
@@ -311,13 +339,16 @@ Antarmuka ini terhubung dengan firmware mikrokontroler di direktori [`SmartCIty-
   {
     "device_id": "esp32s3-E8A851858428",
     "sequence": 1420,
-    "timestamp": 1726934400000,
+    "timestamp": 1726934400,
     "uptime_s": 7100,
     "temperature_c": 31.4,
     "humidity_percent": 68.2,
     "mq135_raw": 1142,
     "mq135_adc_mv": 920,
     "mq135_sensor_mv": 1380,
+    "rain_raw": 3950,
+    "rain_status": "Kering",
+    "is_raining": false,
     "wifi_rssi_dbm": -64
   }
   ```

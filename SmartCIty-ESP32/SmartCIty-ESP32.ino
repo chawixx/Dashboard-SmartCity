@@ -11,13 +11,14 @@
 #define DHT_TYPE DHT22
 
 #define MQ135_PIN 7
+#define RAIN_PIN 8
 
 // ============================================================
 // WIFI CONFIGURATION
 // ============================================================
 
-const char* WIFI_SSID = "Loh-e";
-const char* WIFI_PASSWORD = "Apayahhh890";
+const char* WIFI_SSID = "Doktor Tije Digital";
+const char* WIFI_PASSWORD = "doktortj2025";
 
 // ============================================================
 // HIVEMQ PUBLIC BROKER
@@ -110,6 +111,10 @@ float humidityPercent = NAN;
 uint16_t mq135Raw = 0;
 uint32_t mq135AdcMv = 0;
 float mq135SensorMv = 0.0f;
+
+uint16_t rainRaw = 4095;
+bool isRaining = false;
+String rainStatus = "Kering";
 
 // ============================================================
 // CREATE UNIQUE DEVICE ID
@@ -356,7 +361,38 @@ void readMQ135() {
 }
 
 // ============================================================
-// READ DHT22 + MQ135
+// READ RAIN SENSOR (Pin 8 / ADC1)
+// ============================================================
+
+void readRainSensor() {
+    const int samples = 10;
+    uint32_t rawSum = 0;
+
+    for (int i = 0; i < samples; i++) {
+        rawSum += analogRead(RAIN_PIN);
+        delayMicroseconds(500);
+    }
+
+    rainRaw = rawSum / samples;
+
+    // LM393 Rain plate: Lower ADC = wetter surface
+    if (rainRaw > 3500) {
+        rainStatus = "Kering";
+        isRaining = false;
+    } else if (rainRaw > 2500) {
+        rainStatus = "Gerimis";
+        isRaining = true;
+    } else if (rainRaw > 1500) {
+        rainStatus = "Hujan Sedang";
+        isRaining = true;
+    } else {
+        rainStatus = "Hujan Lebat";
+        isRaining = true;
+    }
+}
+
+// ============================================================
+// READ DHT22 + MQ135 + RAIN SENSOR
 // ============================================================
 
 bool readSensors() {
@@ -386,6 +422,7 @@ bool readSensors() {
         newTemperature;
 
     readMQ135();
+    readRainSensor();
 
     return true;
 }
@@ -483,6 +520,20 @@ void publishTelemetry() {
         mq135SensorMv,
         2
     );
+    payload += ",";
+
+    payload += "\"rain_raw\":";
+    payload += String(
+        rainRaw
+    );
+    payload += ",";
+
+    payload += "\"rain_status\":\"";
+    payload += rainStatus;
+    payload += "\",";
+
+    payload += "\"is_raining\":";
+    payload += isRaining ? "true" : "false";
     payload += ",";
 
     payload += "\"wifi_rssi_dbm\":";
@@ -605,13 +656,20 @@ void setup() {
     dht.begin();
 
     // --------------------------------------------------------
-    // ADC
+    // ADC & SENSOR PINS
     // --------------------------------------------------------
 
     analogReadResolution(12);
 
+    pinMode(RAIN_PIN, INPUT);
+
     analogSetPinAttenuation(
         MQ135_PIN,
+        ADC_11db
+    );
+
+    analogSetPinAttenuation(
+        RAIN_PIN,
         ADC_11db
     );
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { type TelemetryData } from '../../telemetry/types';
-import { Thermometer, Droplets, Wind, Cpu, Wifi, AlertTriangle } from 'lucide-react';
+import { Thermometer, Droplets, Wind, Cpu, Wifi, AlertTriangle, CloudRain } from 'lucide-react';
 import { AtmosphericCanvas } from '../3d/AtmosphericCanvas';
 
 interface HeroSectionProps {
@@ -18,14 +18,6 @@ export function HeroSection({
 }: HeroSectionProps) {
   // Auto-advancing telemetry card slider (3.8s interval per PRD)
   const [activeSlide, setActiveSlide] = useState(0);
-
-  useEffect(() => {
-    if (!isReady) return;
-    const interval = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % 3);
-    }, 3800);
-    return () => clearInterval(interval);
-  }, [isReady]);
 
   const slides = [
     {
@@ -52,7 +44,23 @@ export function HeroSection({
       icon: <Wind size={16} color="var(--brand)" />,
       color: 'var(--brand)',
     },
+    {
+      label: 'RAIN SENSOR (PIN 8)',
+      title: 'Presipitasi Hujan',
+      value: telemetry?.rain_status ?? (telemetry?.rain_raw !== undefined ? (telemetry.is_raining ? 'Hujan' : 'Kering') : '--'),
+      sub: telemetry?.rain_raw !== undefined ? `${telemetry.rain_raw} ADC` : '-- ADC',
+      icon: <CloudRain size={16} color="var(--brand-light)" />,
+      color: 'var(--brand-light)',
+    },
   ];
+
+  useEffect(() => {
+    if (!isReady) return;
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % slides.length);
+    }, 3800);
+    return () => clearInterval(interval);
+  }, [isReady, slides.length]);
 
   const currentSlide = slides[activeSlide];
 
@@ -223,7 +231,7 @@ export function HeroSection({
 
             {/* Carousel Dots */}
             <div style={{ display: 'flex', gap: '6px', marginTop: '12px' }}>
-              {[0, 1, 2].map((idx) => (
+              {slides.map((_, idx) => (
                 <button
                   key={idx}
                   type="button"

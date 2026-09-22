@@ -39,6 +39,18 @@ export function TelemetryMatrixSection({
     },
     {
       index: '04',
+      title: 'Presipitasi & Curah Hujan (Pin 8)',
+      value: telemetry?.rain_status
+        ? `${telemetry.rain_status} (${telemetry.rain_raw ?? '----'} ADC)`
+        : telemetry?.rain_raw !== undefined
+        ? `${telemetry.rain_raw} ADC`
+        : 'N/A',
+      description: 'Deteksi tingkat kebasahan dan tetesan air hujan pada pelat sensor analog GPIO 8 untuk pemantauan cuaca basah Alun-Alun.',
+      anchor: '#analytics',
+      highlightColor: 'var(--brand-light)',
+    },
+    {
+      index: '05',
       title: 'Transmisi Node IoT (ESP32-S3)',
       value: telemetry ? `${telemetry.wifi_rssi_dbm} dBm · Up ${formattedUptime}` : '-- dBm',
       description: 'Kekuatan sinyal Wi-Fi transceiver ESP32-S3 dan jam uptime pemrosesan telemetri.',
