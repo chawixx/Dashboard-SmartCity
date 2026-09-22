@@ -196,6 +196,54 @@ describe('Telemetry Parser (PRD Section 7, 8, 17)', () => {
       expect(result.error).toContain('rain_raw');
     }
   });
+
+  it('successfully parses water level sensor metrics when present in payload', () => {
+    const waterPayload = JSON.stringify({
+      device_id: 'esp32s3-ABCD12345678',
+      sequence: 60,
+      timestamp: 1790041200,
+      uptime_s: 430,
+      temperature_c: 27.1,
+      humidity_percent: 82.0,
+      mq135_raw: 1500,
+      mq135_adc_mv: 1200,
+      mq135_sensor_mv: 2000,
+      water_level_raw: 2850,
+      water_level_cm: 3.1,
+      flood_status: 'Siaga',
+      is_flood_warning: true,
+      wifi_rssi_dbm: -60,
+    });
+    const result = parseTelemetryPayload(waterPayload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.water_level_raw).toBe(2850);
+      expect(result.data.water_level_cm).toBe(3.1);
+      expect(result.data.flood_status).toBe('Siaga');
+      expect(result.data.is_flood_warning).toBe(true);
+    }
+  });
+
+  it('rejects invalid water_level_raw > 4095', () => {
+    const invalidWaterPayload = JSON.stringify({
+      device_id: 'esp32s3-ABCD12345678',
+      sequence: 61,
+      timestamp: 1790041200,
+      uptime_s: 435,
+      temperature_c: 27.1,
+      humidity_percent: 82.0,
+      mq135_raw: 1500,
+      mq135_adc_mv: 1200,
+      mq135_sensor_mv: 2000,
+      water_level_raw: 5000,
+      wifi_rssi_dbm: -60,
+    });
+    const result = parseTelemetryPayload(invalidWaterPayload);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('water_level_raw');
+    }
+  });
 });
 
 describe('Device Status Parser (PRD Section 14)', () => {

@@ -102,4 +102,20 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
     expect(violations['rain_alert'].level).toBe('danger');
     expect(violations['rain_alert'].title).toBe('Presipitasi Hujan Lebat');
   });
+
+  it('detects flood alert when flood_status is Siaga/Bahaya or water_level_raw >= 1500', () => {
+    const floodTelemetry: TelemetryData = {
+      ...normalTelemetry,
+      water_level_raw: 3400,
+      water_level_cm: 3.8,
+      flood_status: 'Bahaya Banjir',
+      is_flood_warning: true,
+    };
+
+    const violations = evaluateTelemetryViolations(floodTelemetry, false);
+    expect(violations['flood_alert']).toBeDefined();
+    expect(violations['flood_alert'].type).toBe('flood');
+    expect(violations['flood_alert'].level).toBe('danger');
+    expect(violations['flood_alert'].title).toContain('Muka Air Sungai Meluap');
+  });
 });

@@ -16,6 +16,10 @@ export interface TelemetryHistoryPoint {
   rain_raw?: number;
   rain_status?: string;
   is_raining?: boolean;
+  water_level_raw?: number;
+  water_level_cm?: number;
+  flood_status?: string;
+  is_flood_warning?: boolean;
   formattedTime: string;
 }
 
@@ -126,6 +130,10 @@ export function createHistoryPoint(telemetry: TelemetryData): TelemetryHistoryPo
     rain_raw: telemetry.rain_raw,
     rain_status: telemetry.rain_status,
     is_raining: telemetry.is_raining,
+    water_level_raw: telemetry.water_level_raw,
+    water_level_cm: telemetry.water_level_cm,
+    flood_status: telemetry.flood_status,
+    is_flood_warning: telemetry.is_flood_warning,
     formattedTime,
   };
 }

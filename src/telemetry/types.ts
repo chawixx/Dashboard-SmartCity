@@ -4,6 +4,7 @@
  */
 
 export type RainStatus = 'Kering' | 'Gerimis' | 'Hujan Sedang' | 'Hujan Lebat';
+export type FloodStatus = 'Aman' | 'Waspada' | 'Siaga' | 'Bahaya Banjir';
 
 export interface TelemetryData {
   device_id: string;
@@ -19,6 +20,10 @@ export interface TelemetryData {
   rain_raw?: number;
   rain_status?: RainStatus;
   is_raining?: boolean;
+  water_level_raw?: number;
+  water_level_cm?: number;
+  flood_status?: FloodStatus;
+  is_flood_warning?: boolean;
 }
 
 export type DeviceStatus = 'online' | 'offline' | 'unknown';
@@ -38,4 +43,6 @@ export const TELEMETRY_LIMITS = {
   mq135_sensor_mv: { min: 0, max: 6000 },
   wifi_rssi_dbm: { min: -120, max: 0 },
   rain_raw: { min: 0, max: 4095 },
+  water_level_raw: { min: 0, max: 4095 },
+  water_level_cm: { min: 0, max: 500 },
 } as const;

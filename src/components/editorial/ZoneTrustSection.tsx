@@ -89,6 +89,22 @@ export function ZoneTrustSection({ lastReceivedAt, telemetry }: ZoneTrustSection
       },
       features: ['Zona Buffer Emisi', 'Sirkulasi Plafon Tinggi', 'Penyangga Angin Darat'],
     },
+    {
+      id: 4,
+      name: 'Saluran Sungai Alun-Alun',
+      subtitle: 'Kanal Drainase & Mitigasi Banjir',
+      tag: 'KONTROL BANJIR',
+      image: '/assets/tegal/hero-alun-alun.jpeg',
+      desc: 'Saluran aliran air dan drainase primer kawasan Alun-Alun Kota Tegal untuk pengawasan luapan debit air rob dan hujan lebat.',
+      coordinates: "6°52'12\"S 109°08'10\"E",
+      hudMetric: {
+        label: 'Debit & Muka Air Sungai',
+        getValue: (t) => (t?.water_level_cm !== undefined ? `${t.water_level_cm.toFixed(1)} cm` : t ? `${t.water_level_raw ?? '--'} ADC` : '0.0 cm'),
+        status: (t) => (t?.flood_status ? t.flood_status : 'Aman Normal'),
+        accent: '#06b6d4',
+      },
+      features: ['Pemantauan Strip Celup Pin 10', 'Early Warning Rob & Banjir', 'Kapasitas Tampung Kanal'],
+    },
   ];
 
   const currentZone = zones[activeZoneIndex];

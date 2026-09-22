@@ -187,6 +187,10 @@ export default function App() {
       rain_raw: 3850,
       rain_status: 'Kering',
       is_raining: false,
+      water_level_raw: 680,
+      water_level_cm: 0.4,
+      flood_status: 'Aman',
+      is_flood_warning: false,
       wifi_rssi_dbm: Math.floor(-56 + (Math.random() * 10 - 5)),
     });
     publish(simTelemetryTopic, payload);
@@ -201,6 +205,8 @@ export default function App() {
       baseUptime += 2;
       const offsetSec = i * 2;
       const isWet = i % 4 >= 2;
+      const waterRaw = Math.floor(650 + (i % 5) * 550);
+      const isFlood = waterRaw >= 2600;
       const payload = JSON.stringify({
         device_id: simDeviceId,
         sequence: currentSeq,
@@ -214,6 +220,10 @@ export default function App() {
         rain_raw: isWet ? 2200 : 3900,
         rain_status: isWet ? 'Hujan Sedang' : 'Kering',
         is_raining: isWet,
+        water_level_raw: waterRaw,
+        water_level_cm: +(((waterRaw - 400) / 3200) * 4.0).toFixed(1),
+        flood_status: isFlood ? 'Siaga' : waterRaw >= 1500 ? 'Waspada' : 'Aman',
+        is_flood_warning: isFlood,
         wifi_rssi_dbm: Math.floor(-54 - (i % 3) * 2),
       });
       publish(simTelemetryTopic, payload);
@@ -244,6 +254,10 @@ export default function App() {
       rain_raw: 3850,
       rain_status: 'Kering',
       is_raining: false,
+      water_level_raw: 680,
+      water_level_cm: 0.4,
+      flood_status: 'Aman',
+      is_flood_warning: false,
       wifi_rssi_dbm: -55,
     });
     publish(simTelemetryTopic, payload);
@@ -264,6 +278,10 @@ export default function App() {
       rain_raw: 3850,
       rain_status: 'Kering',
       is_raining: false,
+      water_level_raw: 680,
+      water_level_cm: 0.4,
+      flood_status: 'Aman',
+      is_flood_warning: false,
       wifi_rssi_dbm: -58,
     });
     publish(simTelemetryTopic, payload);

@@ -12,6 +12,7 @@
 
 #define MQ135_PIN 7
 #define RAIN_PIN 8
+#define WATER_LEVEL_PIN 10
 
 // ============================================================
 // WIFI CONFIGURATION
@@ -115,6 +116,11 @@ float mq135SensorMv = 0.0f;
 uint16_t rainRaw = 4095;
 bool isRaining = false;
 String rainStatus = "Kering";
+
+uint16_t waterLevelRaw = 0;
+float waterLevelCm = 0.0f;
+String floodStatus = "Aman";
+bool isFloodWarning = false;
 
 // ============================================================
 // CREATE UNIQUE DEVICE ID
@@ -392,7 +398,54 @@ void readRainSensor() {
 }
 
 // ============================================================
-// READ DHT22 + MQ135 + RAIN SENSOR
+// READ WATER LEVEL SENSOR (Pin 10 / ADC1 - River Flood Monitoring)
+// ============================================================
+
+void readWaterLevelSensor() {
+    const int samples = 10;
+    uint32_t rawSum = 0;
+
+    for (int i = 0; i < samples; i++) {
+        rawSum += analogRead(WATER_LEVEL_PIN);
+        delayMicroseconds(500);
+    }
+
+    waterLevelRaw = rawSum / samples;
+
+    // Resistive Copper Trace Sensor:
+    // Immersion depth ranges roughly 0 - 4.0 cm on standard 40mm PCB strip
+    // ADC 0 - ~400: Kering (Sensor di atas muka air)
+    // ADC 400 - 1500: Normal (0.5 - 1.5 cm)
+    // ADC 1500 - 2600: Waspada (1.5 - 2.8 cm)
+    // ADC 2600 - 3300: Siaga (2.8 - 3.5 cm)
+    // ADC > 3300: Bahaya Banjir (> 3.5 cm / Terendam Penuh)
+
+    if (waterLevelRaw < 400) {
+        waterLevelCm = 0.0f;
+        floodStatus = "Aman";
+        isFloodWarning = false;
+    } else {
+        waterLevelCm = ((float)(waterLevelRaw - 400) / 3200.0f) * 4.0f;
+        if (waterLevelCm > 4.5f) waterLevelCm = 4.5f;
+
+        if (waterLevelRaw >= 3300) {
+            floodStatus = "Bahaya Banjir";
+            isFloodWarning = true;
+        } else if (waterLevelRaw >= 2600) {
+            floodStatus = "Siaga";
+            isFloodWarning = true;
+        } else if (waterLevelRaw >= 1500) {
+            floodStatus = "Waspada";
+            isFloodWarning = false;
+        } else {
+            floodStatus = "Aman";
+            isFloodWarning = false;
+        }
+    }
+}
+
+// ============================================================
+// READ DHT22 + MQ135 + RAIN SENSOR + WATER LEVEL
 // ============================================================
 
 bool readSensors() {
@@ -423,6 +476,7 @@ bool readSensors() {
 
     readMQ135();
     readRainSensor();
+    readWaterLevelSensor();
 
     return true;
 }
@@ -534,6 +588,27 @@ void publishTelemetry() {
 
     payload += "\"is_raining\":";
     payload += isRaining ? "true" : "false";
+    payload += ",";
+
+    payload += "\"water_level_raw\":";
+    payload += String(
+        waterLevelRaw
+    );
+    payload += ",";
+
+    payload += "\"water_level_cm\":";
+    payload += String(
+        waterLevelCm,
+        1
+    );
+    payload += ",";
+
+    payload += "\"flood_status\":\"";
+    payload += floodStatus;
+    payload += "\",";
+
+    payload += "\"is_flood_warning\":";
+    payload += isFloodWarning ? "true" : "false";
     payload += ",";
 
     payload += "\"wifi_rssi_dbm\":";
@@ -662,6 +737,7 @@ void setup() {
     analogReadResolution(12);
 
     pinMode(RAIN_PIN, INPUT);
+    pinMode(WATER_LEVEL_PIN, INPUT);
 
     analogSetPinAttenuation(
         MQ135_PIN,
@@ -670,6 +746,11 @@ void setup() {
 
     analogSetPinAttenuation(
         RAIN_PIN,
+        ADC_11db
+    );
+
+    analogSetPinAttenuation(
+        WATER_LEVEL_PIN,
         ADC_11db
     );
 

@@ -17,6 +17,7 @@
    - [Epoch III: Optimasi Mobile, Asset Fotografi & Rantai Multi-Format](#epoch-iii-optimasi-mobile-asset-fotografi--rantai-multi-format)
    - [Epoch IV: Interaktivitas 3D Spatial Deck & Menu Hamburger "Air Menetes"](#epoch-iv-interaktivitas-3d-spatial-deck--menu-hamburger-air-menetes)
    - [Epoch V: Integrasi Rain Sensor (GPIO 8 / ADC1) & Sistem Peringatan Presipitasi](#epoch-v-integrasi-rain-sensor-gpio-8--adc1--sistem-peringatan-presipitasi)
+   - [Epoch VI: Integrasi Water Level Sensor (GPIO 10 / ADC1) & Sistem Deteksi Banjir Sungai](#epoch-vi-integrasi-water-level-sensor-gpio-10--adc1--sistem-deteksi-banjir-sungai)
 3. [Manifestasi Struktur Berkas Proyek](#3-manifestasi-struktur-berkas-proyek)
 4. [Matriks Verifikasi, Keamanan & Pengujian Kualitas](#4-matriks-verifikasi-keamanan--pengujian-kualitas)
 5. [Spesifikasi Hardware & Kontrak Komunikasi Edge](#5-spesifikasi-hardware--kontrak-komunikasi-edge)
@@ -205,6 +206,34 @@ Berdasarkan dokumen arahan [`CHANGE_THEME.md`](file:///home/narr/Projects/SmartC
 
 ---
 
+### Epoch VI: Integrasi Water Level Sensor (GPIO 10 / ADC1) & Sistem Deteksi Banjir Sungai
+
+1. **Pemilihan Pin Bebas Interferensi Wi-Fi (Hardware ADC1):**
+   - Mengalokasikan pin analog **GPIO 10** pada ESP32-S3 yang terhubung langsung ke **ADC1 (`ADC1_CH9`)**.
+   - Menjaga stabilitas transmisi Wi-Fi MQTT secara terus-menerus tanpa gangguan tabrakan kanal ADC2.
+2. **Implementasi Firmware ESP32-S3 (`SmartCIty-ESP32.ino`):**
+   - Menambahkan `#define WATER_LEVEL_PIN 10` dengan konfigurasi `pinMode(WATER_LEVEL_PIN, INPUT)` dan `analogSetPinAttenuation(WATER_LEVEL_PIN, ADC_11db)`.
+   - Mengimplementasikan fungsi `readWaterLevelSensor()` dengan teknik *10-sample oversampling* (jeda 500µs).
+   - Mengonversi resistansi strip celup paralel 40mm menjadi estimasi ketinggian air $0.0 \dots 4.0\text{ cm}$ dan status siaga:
+     - `< 400 ADC`: `"Aman"` ($0\text{ cm}$, sensor di atas muka air / surut)
+     - `400 – 1500 ADC`: `"Aman"` ($0.1 – 1.5\text{ cm}$, debit normal)
+     - `1500 – 2600 ADC`: `"Waspada"` ($1.5 – 2.8\text{ cm}$, peningkatan debit aliran)
+     - `2600 – 3300 ADC`: `"Siaga"` ($2.8 – 3.5\text{ cm}$, muka air kritis mendekati bibir tanggul)
+     - `>= 3300 ADC`: `"Bahaya Banjir"` ($> 3.5\text{ cm}$, sensor terendam penuh / potensi luapan kanal)
+   - Memasukkan `"water_level_raw"`, `"water_level_cm"`, `"flood_status"`, dan `"is_flood_warning"` ke dalam payload JSON telemetri MQTT.
+3. **Pembaruan Kontrak Data & Parser Toleran:**
+   - Memperbarui [`MQTT-CONTRACT.md`](file:///home/narr/Projects/SmartCity/MQTT-CONTRACT.md) dan `src/telemetry/types.ts` dengan interface `FloodStatus` dan batas validasi.
+   - Parser aman di `src/mqtt/parser.ts` mendukung *backward-compatibility* penuh.
+4. **Engine Peringatan Banjir & Visualisasi Multi-Komponen:**
+   - Menambahkan evaluator bahaya banjir di `src/hooks/useAlertEngine.ts` untuk memicu notifikasi darurat saat status sungai masuk level `Siaga` atau `Bahaya Banjir`.
+   - Menambahkan ikon `Waves` pada toast notifikasi di `src/components/alerts/AlertToastContainer.tsx`.
+   - Menambahkan baris `#05: Ketinggian Air Sungai & Saluran (Pin 10)` pada `TelemetryMatrixSection.tsx`.
+   - Menambahkan slide ke-5 otomatis pada hero telemetry card di `HeroSection.tsx`.
+   - Menambahkan Zona ke-4: `Saluran Sungai Alun-Alun (Kanal Drainase & Mitigasi Banjir)` pada 3D Spatial Deck di `ZoneTrustSection.tsx`.
+   - Memperbarui simulator manual & burst generator di `src/App.tsx`.
+
+---
+
 ## 3. Manifestasi Struktur Berkas Proyek
 
 ```
@@ -311,16 +340,16 @@ SmartCity/
 
 | Kategori Pengujian | Instrumen | Hasil / Status | Keterangan |
 |---|---|---|---|
-| **Pemeriksaan Linter** | `oxlint` (116 rules) | **0 Warning, 0 Error** | Diuji pada 43 berkas dalam 149ms |
+| **Pemeriksaan Linter** | `oxlint` (116 rules) | **0 Warning, 0 Error** | Diuji pada 43 berkas dalam 84ms |
 | **Kompilasi TypeScript** | `tsc -b` | **0 Error** | Mode ketat (*strict mode*) aktif tanpa tipe implisit `any` |
-| **Unit Testing: Parser** | `vitest` | **14 / 14 Lulus** | Menguji JSON korup, batas suhu, kelembapan, gas, & rain sensor |
+| **Unit Testing: Parser** | `vitest` | **16 / 16 Lulus** | Menguji JSON korup, batas fisik sensor, rain sensor, & water level |
 | **Unit Testing: Store** | `vitest` | **8 / 8 Lulus** | Menguji paket duplikat, watchdog 15s, counter |
 | **Unit Testing: Ring Buffer** | `vitest` | **5 / 5 Lulus** | Menguji batas 300 sampel, $O(1)$ eviction |
 | **Unit Testing: MQTT Client** | `vitest` | **3 / 3 Lulus** | Menguji backoff reconnect, status transisi |
 | **Unit Testing: Security** | `vitest` | **5 / 5 Lulus** | Menguji sanitasi prototype pollution & data fiktif |
-| **Unit Testing: Alert Engine**| `vitest` | **8 / 8 Lulus** | Menguji persistensi alert, ambang batas bahaya, & presipitasi hujan |
-| **Total Test Suite** | `vitest run` | **43 / 43 Lulus (100%)** | Durasi eksekusi ~1.34 detik |
-| **Production Build** | `vite build` | **Sukses (1.89s)** | Menghasilkan bundel teroptimasi di direktori `dist/` |
+| **Unit Testing: Alert Engine**| `vitest` | **9 / 9 Lulus** | Menguji persistensi alert, bahaya suhu/gas, presipitasi hujan, & banjir |
+| **Total Test Suite** | `vitest run` | **46 / 46 Lulus (100%)** | Durasi eksekusi ~1.19 detik |
+| **Production Build** | `vite build` | **Sukses (1.09s)** | Menghasilkan bundel teroptimasi di direktori `dist/` |
 
 ---
 
@@ -332,6 +361,7 @@ Antarmuka ini terhubung dengan firmware mikrokontroler di direktori [`SmartCIty-
 - **Sensor Suhu & Kelembapan:** Aosong DHT22 (AM2302) pada Pin GPIO 6
 - **Sensor Kualitas Udara:** Winsen MQ-135 pada Pin Analog GPIO 7 (ADC 12-bit ADC1, attenuasi 11dB, voltage divider 10k/15k)
 - **Sensor Hujan (Presipitasi):** LM393 Rain Plate pada Pin Analog GPIO 8 (ADC1 Channel 7, attenuasi 11dB)
+- **Sensor Level Air (Banjir Sungai):** Resistive Copper Strip pada Pin Analog GPIO 10 (ADC1 Channel 9, attenuasi 11dB)
 - **Topik MQTT Telemetri:** `aethersense/{device_id}/telemetry` (QoS 0, frekuensi interval 5000ms)
 - **Topik Status LWT:** `aethersense/{device_id}/status` (QoS 1, retain: true, LWT: `"offline"`)
 - **Struktur Payload Telemetri Standar:**
@@ -349,6 +379,10 @@ Antarmuka ini terhubung dengan firmware mikrokontroler di direktori [`SmartCIty-
     "rain_raw": 3950,
     "rain_status": "Kering",
     "is_raining": false,
+    "water_level_raw": 680,
+    "water_level_cm": 0.4,
+    "flood_status": "Aman",
+    "is_flood_warning": false,
     "wifi_rssi_dbm": -64
   }
   ```

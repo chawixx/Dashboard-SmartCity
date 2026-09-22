@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { type TelemetryData } from '../../telemetry/types';
-import { Thermometer, Droplets, Wind, Cpu, Wifi, AlertTriangle, CloudRain } from 'lucide-react';
+import { Thermometer, Droplets, Wind, Cpu, Wifi, AlertTriangle, CloudRain, Waves } from 'lucide-react';
 import { AtmosphericCanvas } from '../3d/AtmosphericCanvas';
 
 interface HeroSectionProps {
@@ -51,6 +51,14 @@ export function HeroSection({
       sub: telemetry?.rain_raw !== undefined ? `${telemetry.rain_raw} ADC` : '-- ADC',
       icon: <CloudRain size={16} color="var(--brand-light)" />,
       color: 'var(--brand-light)',
+    },
+    {
+      label: 'WATER LEVEL (PIN 10)',
+      title: 'Level Air Sungai',
+      value: telemetry?.flood_status ?? (telemetry?.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm` : '--'),
+      sub: telemetry?.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm (${telemetry.water_level_raw ?? '--'} ADC)` : '-- ADC',
+      icon: <Waves size={16} color={telemetry?.flood_status === 'Bahaya Banjir' || telemetry?.flood_status === 'Siaga' ? '#f43f5e' : 'var(--brand-light)'} />,
+      color: telemetry?.flood_status === 'Bahaya Banjir' || telemetry?.flood_status === 'Siaga' ? '#f43f5e' : 'var(--brand-light)',
     },
   ];
 

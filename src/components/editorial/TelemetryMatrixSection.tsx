@@ -51,6 +51,18 @@ export function TelemetryMatrixSection({
     },
     {
       index: '05',
+      title: 'Ketinggian Air Sungai & Saluran (Pin 10)',
+      value: telemetry?.flood_status
+        ? `${telemetry.flood_status} (${telemetry.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm` : `${telemetry.water_level_raw ?? '--'} ADC`})`
+        : telemetry?.water_level_raw !== undefined
+        ? `${telemetry.water_level_raw} ADC`
+        : 'N/A',
+      description: 'Pemantauan debit muka air pada strip konduktif celup GPIO 10 untuk deteksi dini luapan dan mitigasi banjir Alun-Alun.',
+      anchor: '#analytics',
+      highlightColor: telemetry?.flood_status === 'Bahaya Banjir' || telemetry?.flood_status === 'Siaga' ? '#f43f5e' : 'var(--brand-light)',
+    },
+    {
+      index: '06',
       title: 'Transmisi Node IoT (ESP32-S3)',
       value: telemetry ? `${telemetry.wifi_rssi_dbm} dBm · Up ${formattedUptime}` : '-- dBm',
       description: 'Kekuatan sinyal Wi-Fi transceiver ESP32-S3 dan jam uptime pemrosesan telemetri.',

@@ -1,4 +1,4 @@
-import { AlertTriangle, Flame, Droplets, Wind, WifiOff, CloudRain, X } from 'lucide-react';
+import { AlertTriangle, Flame, Droplets, Wind, WifiOff, CloudRain, Waves, X } from 'lucide-react';
 import { type AlertItem } from '../../hooks/useAlertEngine';
 
 interface AlertToastContainerProps {
@@ -19,6 +19,8 @@ export function AlertToastContainer({ alerts, onDismiss }: AlertToastContainerPr
         return <Wind size={16} color="#f43f5e" />;
       case 'rain':
         return <CloudRain size={16} color="#38bdf8" />;
+      case 'flood':
+        return <Waves size={16} color="#38bdf8" />;
       case 'stale':
         return <WifiOff size={16} color="#eab308" />;
       default:

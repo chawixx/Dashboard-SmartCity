@@ -8,6 +8,7 @@ import {
   type DeviceStatus,
   type ParseResult,
   type RainStatus,
+  type FloodStatus,
   TELEMETRY_LIMITS,
 } from '../telemetry/types';
 
@@ -168,6 +169,27 @@ export function parseTelemetryPayload(
     }
   }
 
+  // 5. Validate optional water level sensor readings (Pin 10)
+  if (obj.water_level_raw !== undefined) {
+    if (!isValidNumber(obj.water_level_raw, TELEMETRY_LIMITS.water_level_raw.min, TELEMETRY_LIMITS.water_level_raw.max)) {
+      return {
+        success: false,
+        error: `Invalid "water_level_raw": ${obj.water_level_raw} (expected ${TELEMETRY_LIMITS.water_level_raw.min}..${TELEMETRY_LIMITS.water_level_raw.max} ADC count)`,
+        rawPayload: raw,
+      };
+    }
+  }
+
+  if (obj.water_level_cm !== undefined) {
+    if (!isValidNumber(obj.water_level_cm, TELEMETRY_LIMITS.water_level_cm.min, TELEMETRY_LIMITS.water_level_cm.max)) {
+      return {
+        success: false,
+        error: `Invalid "water_level_cm": ${obj.water_level_cm} (expected ${TELEMETRY_LIMITS.water_level_cm.min}..${TELEMETRY_LIMITS.water_level_cm.max} cm)`,
+        rawPayload: raw,
+      };
+    }
+  }
+
   // Construct typed and clean TelemetryData object
   const validTelemetry: TelemetryData = {
     device_id: deviceId,
@@ -192,6 +214,22 @@ export function parseTelemetryPayload(
 
   if (typeof obj.is_raining === 'boolean') {
     validTelemetry.is_raining = obj.is_raining;
+  }
+
+  if (obj.water_level_raw !== undefined) {
+    validTelemetry.water_level_raw = Math.floor(obj.water_level_raw as number);
+  }
+
+  if (obj.water_level_cm !== undefined) {
+    validTelemetry.water_level_cm = Math.round((obj.water_level_cm as number) * 10) / 10;
+  }
+
+  if (typeof obj.flood_status === 'string' && obj.flood_status.trim().length > 0) {
+    validTelemetry.flood_status = obj.flood_status.trim() as FloodStatus;
+  }
+
+  if (typeof obj.is_flood_warning === 'boolean') {
+    validTelemetry.is_flood_warning = obj.is_flood_warning;
   }
 
   return {

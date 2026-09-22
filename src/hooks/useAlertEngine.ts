@@ -3,7 +3,7 @@ import { type TelemetryData } from '../telemetry/types';
 
 export interface AlertItem {
   id: string;
-  type: 'temperature' | 'humidity' | 'gas' | 'stale' | 'rain';
+  type: 'temperature' | 'humidity' | 'gas' | 'stale' | 'rain' | 'flood';
   level: 'warning' | 'danger';
   title: string;
   message: string;
@@ -83,6 +83,33 @@ export function evaluateTelemetryViolations(
         title: isHeavy ? 'Presipitasi Hujan Lebat' : isModerate ? 'Hujan Sedang Terdeteksi' : 'Gerimis Terdeteksi',
         message: `Sensor hujan (Pin 8) mendeteksi presipitasi (${telemetry.rain_status || 'Hujan'}, ${telemetry.rain_raw ?? '--'} ADC). Waspada permukaan rumput sintetis dan trotoar Alun-Alun menjadi licin.`,
         metricValue: telemetry.rain_status ?? (telemetry.rain_raw ? `${telemetry.rain_raw} ADC` : 'HUJAN'),
+      };
+    }
+
+    // 5. Check Water Level / Flood Sensor (Pin 10)
+    if (
+      telemetry.is_flood_warning ||
+      (telemetry.water_level_raw !== undefined && telemetry.water_level_raw >= 1500) ||
+      telemetry.flood_status === 'Siaga' ||
+      telemetry.flood_status === 'Bahaya Banjir'
+    ) {
+      const isCritical =
+        (telemetry.water_level_raw !== undefined && telemetry.water_level_raw >= 3300) ||
+        telemetry.flood_status === 'Bahaya Banjir';
+      const isSiaga =
+        (telemetry.water_level_raw !== undefined && telemetry.water_level_raw >= 2600) ||
+        telemetry.flood_status === 'Siaga';
+
+      violations['flood_alert'] = {
+        type: 'flood',
+        level: isCritical ? 'danger' : isSiaga ? 'danger' : 'warning',
+        title: isCritical
+          ? 'Bahaya Banjir: Muka Air Sungai Meluap!'
+          : isSiaga
+          ? 'Siaga Banjir: Aliran Sungai Alun-Alun Kritis'
+          : 'Waspada: Peningkatan Debit Air Sungai',
+        message: `Sensor ketinggian air (Pin 10) mendeteksi muka air ${telemetry.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm` : ''} (${telemetry.water_level_raw ?? '--'} ADC). Waspada potensi luapan saluran drainase Alun-Alun.`,
+        metricValue: telemetry.flood_status ?? (telemetry.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm` : 'BANJIR'),
       };
     }
   }
