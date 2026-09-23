@@ -9,6 +9,7 @@ import {
   type ParseResult,
   type RainStatus,
   type FloodStatus,
+  type AirQualityStatus,
   TELEMETRY_LIMITS,
 } from '../telemetry/types';
 
@@ -244,6 +245,14 @@ export function parseTelemetryPayload(
 
   if (typeof obj.is_flood_warning === 'boolean') {
     validTelemetry.is_flood_warning = obj.is_flood_warning;
+  }
+
+  if (typeof obj.air_quality_status === 'string' && obj.air_quality_status.trim().length > 0) {
+    validTelemetry.air_quality_status = obj.air_quality_status.trim() as AirQualityStatus;
+  }
+
+  if (typeof obj.is_gas_polluted === 'boolean') {
+    validTelemetry.is_gas_polluted = obj.is_gas_polluted;
   }
 
   return {

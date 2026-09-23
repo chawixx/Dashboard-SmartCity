@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { type TelemetryData } from '../../telemetry/types';
+import { getAirQualityGrade } from '../../telemetry/formatters';
 import { Thermometer, Droplets, Wind, Cpu, Wifi, AlertTriangle, CloudRain, Waves } from 'lucide-react';
 import { AtmosphericCanvas } from '../3d/AtmosphericCanvas';
 
@@ -18,6 +19,7 @@ export function HeroSection({
 }: HeroSectionProps) {
   // Auto-advancing telemetry card slider (3.8s interval per PRD)
   const [activeSlide, setActiveSlide] = useState(0);
+  const gasGrade = getAirQualityGrade(telemetry?.mq135_raw, telemetry?.air_quality_status);
 
   const slides = [
     {
@@ -37,12 +39,12 @@ export function HeroSection({
       color: 'var(--brand-light)',
     },
     {
-      label: 'MQ135 ANALOG',
+      label: 'MQ135 (UDARA & GAS)',
       title: 'Kualitas Gas',
-      value: telemetry ? `${telemetry.mq135_raw} ADC` : '---- ADC',
-      sub: telemetry ? `${telemetry.mq135_sensor_mv.toFixed(0)} mV` : '-- mV',
-      icon: <Wind size={16} color="var(--brand)" />,
-      color: 'var(--brand)',
+      value: telemetry ? gasGrade.label : '----',
+      sub: telemetry ? `${telemetry.mq135_raw} ADC · ${telemetry.mq135_sensor_mv.toFixed(0)} mV` : '-- mV',
+      icon: <Wind size={16} color={gasGrade.color} />,
+      color: gasGrade.color,
     },
     {
       label: 'RAIN SENSOR (PIN 8)',

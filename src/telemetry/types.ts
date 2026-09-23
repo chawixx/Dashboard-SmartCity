@@ -5,6 +5,7 @@
 
 export type RainStatus = 'Kering' | 'Gerimis' | 'Hujan Sedang' | 'Hujan Lebat';
 export type FloodStatus = 'Aman' | 'Waspada' | 'Siaga' | 'Bahaya Banjir';
+export type AirQualityStatus = 'Udara Bersih' | 'Sedang' | 'Tercemar Gas' | 'Sangat Tercemar';
 
 export interface TelemetryData {
   device_id: string;
@@ -16,6 +17,8 @@ export interface TelemetryData {
   mq135_raw: number;
   mq135_adc_mv: number;
   mq135_sensor_mv: number;
+  air_quality_status?: AirQualityStatus;
+  is_gas_polluted?: boolean;
   wifi_rssi_dbm: number;
   rain_raw?: number;
   rain_status?: RainStatus;

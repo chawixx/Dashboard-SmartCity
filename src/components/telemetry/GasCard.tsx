@@ -1,13 +1,19 @@
-import { Wind, AlertCircle } from 'lucide-react';
+import { Wind, AlertCircle, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { type AirQualityStatus } from '../../telemetry/types';
+import { getAirQualityGrade } from '../../telemetry/formatters';
 
 interface GasCardProps {
   raw: number | null;
   adcMv: number | null;
   sensorMv: number | null;
+  airQualityStatus?: AirQualityStatus;
+  isGasPolluted?: boolean;
   isStale?: boolean;
 }
 
-export function GasCard({ raw, adcMv, sensorMv, isStale }: GasCardProps) {
+export function GasCard({ raw, adcMv, sensorMv, airQualityStatus, isStale }: GasCardProps) {
+  const grade = getAirQualityGrade(raw, airQualityStatus);
+
   return (
     <div
       className="glass-panel glow-gas"
@@ -18,41 +24,100 @@ export function GasCard({ raw, adcMv, sensorMv, isStale }: GasCardProps) {
         justifyContent: 'space-between',
         position: 'relative',
         overflow: 'hidden',
-        borderTop: '2px solid var(--brand)',
+        borderTop: `2px solid ${grade.color}`,
         opacity: isStale ? 0.75 : 1,
-        transition: 'opacity 0.3s ease',
+        transition: 'opacity 0.3s ease, border-color 0.4s ease',
       }}
     >
       {/* Header Row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div className="eyebrow">
-          <span className="eyebrow-dot" style={{ background: 'var(--brand)', boxShadow: '0 0 8px var(--brand)' }} />
-          <span style={{ color: 'var(--text-secondary)' }}>Air Quality / Gas</span>
+          <span className="eyebrow-dot" style={{ background: grade.color, boxShadow: `0 0 8px ${grade.color}` }} />
+          <span style={{ color: 'var(--text-secondary)' }}>Kualitas Udara &amp; Gas (MQ135)</span>
         </div>
         <div
           style={{
             width: '32px',
             height: '32px',
             borderRadius: 'var(--radius-pill)',
-            background: 'rgba(37, 99, 201, 0.15)',
-            border: '1px solid rgba(37, 99, 201, 0.3)',
+            background: grade.bgColor,
+            border: `1px solid ${grade.borderColor}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: 'var(--brand-light)',
+            color: grade.color,
           }}
         >
           <Wind size={16} />
         </div>
       </div>
 
-      {/* Main Metric Value */}
-      <div style={{ marginTop: '20px', marginBottom: '16px' }}>
+      {/* Human-Readable Air Quality Indicator (User Request) */}
+      <div
+        style={{
+          marginTop: '16px',
+          marginBottom: '16px',
+          padding: '12px 14px',
+          borderRadius: 'var(--radius-xl)',
+          background: grade.bgColor,
+          border: `1px solid ${grade.borderColor}`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '6px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {grade.isPolluted ? (
+              <AlertTriangle size={18} color={grade.color} />
+            ) : (
+              <ShieldCheck size={18} color={grade.color} />
+            )}
+            <span
+              style={{
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                color: grade.color,
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {grade.label}
+            </span>
+          </div>
+          <span
+            className="mono-text"
+            style={{
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              padding: '3px 8px',
+              borderRadius: 'var(--radius-pill)',
+              background: 'rgba(0, 0, 0, 0.25)',
+              color: grade.color,
+              border: `1px solid ${grade.borderColor}`,
+            }}
+          >
+            {grade.badgeText}
+          </span>
+        </div>
+        <p
+          style={{
+            fontSize: '0.78rem',
+            color: 'rgba(255, 255, 255, 0.85)',
+            margin: 0,
+            lineHeight: 1.4,
+          }}
+        >
+          {grade.description}
+        </p>
+      </div>
+
+      {/* Main Raw Metric Value & Breakdown */}
+      <div style={{ marginBottom: '14px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
           <span
             className="mono-text"
             style={{
-              fontSize: '2.8rem',
+              fontSize: '2.4rem',
               fontWeight: 700,
               color: '#ffffff',
               lineHeight: 1,
@@ -75,7 +140,7 @@ export function GasCard({ raw, adcMv, sensorMv, isStale }: GasCardProps) {
         </div>
       </div>
 
-      {/* Voltage Readouts (PRD Section 9) */}
+      {/* Voltage Readouts */}
       <div
         style={{
           display: 'grid',
@@ -107,7 +172,7 @@ export function GasCard({ raw, adcMv, sensorMv, isStale }: GasCardProps) {
         </div>
       </div>
 
-      {/* Mandatory Calibration Notice (PRD Section 9) */}
+      {/* Calibration & Interpretation Notice */}
       <div
         style={{
           display: 'flex',
@@ -119,8 +184,8 @@ export function GasCard({ raw, adcMv, sensorMv, isStale }: GasCardProps) {
           paddingTop: '10px',
         }}
       >
-        <AlertCircle size={13} color="var(--brand-light)" />
-        <span>MQ135 Raw Telemetry (No unverified PPM/AQI)</span>
+        <AlertCircle size={13} color={grade.color} />
+        <span>Indikator gas alam/asap empiris (Udara Bersih vs Tercemar Gas)</span>
       </div>
     </div>
   );

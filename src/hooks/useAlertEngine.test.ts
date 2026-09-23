@@ -81,6 +81,22 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
     expect(violations['gas_high'].title).toContain('Gas / Asap');
   });
 
+  it('detects gas pollution alert when is_gas_polluted or air_quality_status is Tercemar Gas', () => {
+    const pollutedTelemetry: TelemetryData = {
+      ...normalTelemetry,
+      mq135_raw: 2800,
+      mq135_sensor_mv: 3700,
+      air_quality_status: 'Tercemar Gas',
+      is_gas_polluted: true,
+    };
+
+    const violations = evaluateTelemetryViolations(pollutedTelemetry, false);
+    expect(violations['gas_high']).toBeDefined();
+    expect(violations['gas_high'].type).toBe('gas');
+    expect(violations['gas_high'].level).toBe('warning');
+    expect(violations['gas_high'].title).toContain('Tercemar Gas');
+  });
+
   it('detects watchdog stale condition when node is silent >15s', () => {
     const violations = evaluateTelemetryViolations(normalTelemetry, true);
     expect(violations['stale_node']).toBeDefined();

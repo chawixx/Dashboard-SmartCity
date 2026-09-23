@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, type PointerEvent } from 'react';
 import { type TelemetryHistoryPoint } from '../../telemetry/history';
 import { type TelemetryData } from '../../telemetry/types';
+import { getAirQualityGrade } from '../../telemetry/formatters';
 import { Activity, Wind } from 'lucide-react';
 
 // SVG Chart Dimensions
@@ -21,6 +22,7 @@ export function FacilitiesAnalyticsSection({
 }: FacilitiesAnalyticsSectionProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const gasGrade = getAirQualityGrade(telemetry?.mq135_raw, telemetry?.air_quality_status);
 
   // Temperature & Humidity Scales
   const scales = useMemo(() => {
@@ -293,9 +295,9 @@ export function FacilitiesAnalyticsSection({
                 </h3>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Wind size={16} color="var(--brand)" />
-                <span className="mono-text" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--brand)' }}>
-                  {telemetry ? `${telemetry.mq135_raw} ADC` : '----'}
+                <Wind size={16} color={gasGrade.color} />
+                <span className="mono-text" style={{ fontSize: '0.85rem', fontWeight: 700, color: gasGrade.color }}>
+                  {telemetry ? `${gasGrade.label} (${telemetry.mq135_raw} ADC)` : '----'}
                 </span>
               </div>
             </div>

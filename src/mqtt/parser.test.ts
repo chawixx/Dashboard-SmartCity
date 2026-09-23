@@ -292,6 +292,29 @@ describe('Telemetry Parser (PRD Section 7, 8, 17)', () => {
       expect(result.error).toContain('water_distance_cm');
     }
   });
+
+  it('correctly parses optional air_quality_status and is_gas_polluted fields', () => {
+    const payload = JSON.stringify({
+      device_id: 'esp32s3-ABCD12345678',
+      sequence: 64,
+      timestamp: 1790041200,
+      uptime_s: 450,
+      temperature_c: 28.0,
+      humidity_percent: 70.0,
+      mq135_raw: 2850,
+      mq135_adc_mv: 2200,
+      mq135_sensor_mv: 3666.67,
+      air_quality_status: 'Tercemar Gas',
+      is_gas_polluted: true,
+      wifi_rssi_dbm: -58,
+    });
+    const result = parseTelemetryPayload(payload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.air_quality_status).toBe('Tercemar Gas');
+      expect(result.data.is_gas_polluted).toBe(true);
+    }
+  });
 });
 
 describe('Device Status Parser (PRD Section 14)', () => {

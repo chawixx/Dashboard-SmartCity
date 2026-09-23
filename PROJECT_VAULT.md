@@ -19,6 +19,7 @@
    - [Epoch V: Integrasi Rain Sensor (GPIO 8 / ADC1) & Sistem Peringatan Presipitasi](#epoch-v-integrasi-rain-sensor-gpio-8--adc1--sistem-peringatan-presipitasi)
    - [Epoch VI: Integrasi Water Level Sensor (GPIO 10 / ADC1) & Sistem Deteksi Banjir Sungai](#epoch-vi-integrasi-water-level-sensor-gpio-10--adc1--sistem-deteksi-banjir-sungai)
    - [Epoch VII: Migrasi Deteksi Banjir ke Sensor Ultrasonik HC-SR04 (Trig Pin 13, Echo Pin 12, Maks 30cm, Logika Inversi)](#epoch-vii-migrasi-deteksi-banjir-ke-sensor-ultrasonik-hc-sr04-trig-pin-13-echo-pin-12-maks-30cm-logika-inversi)
+   - [Epoch VIII: Indikator Kualitas Udara Ramah Manusia (MQ-135 Udara Bersih vs Tercemar Gas)](#epoch-viii-indikator-kualitas-udara-ramah-manusia-mq-135-udara-bersih-vs-tercemar-gas)
 3. [Manifestasi Struktur Berkas Proyek](#3-manifestasi-struktur-berkas-proyek)
 4. [Matriks Verifikasi, Keamanan & Pengujian Kualitas](#4-matriks-verifikasi-keamanan--pengujian-kualitas)
 5. [Spesifikasi Hardware & Kontrak Komunikasi Edge](#5-spesifikasi-hardware--kontrak-komunikasi-edge)
@@ -265,6 +266,34 @@ Berdasarkan dokumen arahan [`CHANGE_THEME.md`](file:///home/narr/Projects/SmartC
 
 ---
 
+### Epoch VIII: Indikator Kualitas Udara Ramah Manusia (MQ-135 Udara Bersih vs Tercemar Gas)
+
+1. **Transformasi Nilai Mentah ke Indikator Intuitif Publik:**
+   - Memenuhi kebutuhan pemahaman publik awam dengan menambahkan klasifikasi kualitas udara berbasis empiris sensor gas MQ-135 tanpa rekayasa fiktif PPM/AQI.
+   - Mengelompokkan resistansi analog 12-bit MQ-135 ke dalam status yang mudah dipahami:
+     - **$< 1500\text{ ADC}$** ($\approx < 1800\text{ mV}$ sensor): `"Udara Bersih"` (`is_gas_polluted: false`, badge hijau emerald, kondisi udara ruang terbuka segar tanpa akumulasi gas buang).
+     - **$1500 - 2500\text{ ADC}$** ($\approx 1800 - 3000\text{ mV}$ sensor): `"Sedang"` (`is_gas_polluted: false`, badge cyan, ambien perkotaan normal).
+     - **$2500 - 3400\text{ ADC}$** ($\approx 3000 - 4100\text{ mV}$ sensor): `"Tercemar Gas"` (`is_gas_polluted: true`, badge amber, terdeteksi emisi knalpot/asap rokok/pembakaran).
+     - **$\ge 3400\text{ ADC}$** ($\approx > 4100\text{ mV}$ sensor): `"Sangat Tercemar"` (`is_gas_polluted: true`, badge merah mawar, akumulasi gas/asap pekat berisiko).
+2. **Implementasi Firmware ESP32-S3 (`SmartCIty-ESP32.ino`):**
+   - Menambahkan `String airQualityStatus = "Udara Bersih";` dan `bool isGasPolluted = false;`.
+   - Menghitung klasifikasi pada `readMQ135()` secara langsung di tepi jaringan (*edge computing*).
+   - Memasukkan `"air_quality_status"` dan `"is_gas_polluted"` ke dalam payload telemetri MQTT JSON.
+3. **Pembaruan Kontrak Data, Formatters, & Parser:**
+   - Memperbarui `src/telemetry/types.ts` dengan interface `AirQualityStatus` dan atribut `is_gas_polluted`.
+   - Membuat utilitas terpusat `getAirQualityGrade()` di `src/telemetry/formatters.ts` untuk menyediakan label, warna CSS token, teks badge, dan deskripsi penjelasan naratif.
+   - Parser aman di `src/mqtt/parser.ts` membaca atribut kualitas udara baru dengan *backward-compatibility* penuh terhadap payload lama.
+4. **Desain Ulang Visual & Dashboard Observatorium:**
+   - **`GasCard.tsx`**: Ditransformasi dengan Hero Status Badge ("🌿 UDARA BERSIH" / "⚠️ TERCEMAR GAS"), ikon perisai/peringatan, dan narasi penjelasan ramah pengguna dengan tetap menampilkan spesifikasi ADC & voltase di bawahnya.
+   - **`TelemetryMatrixSection.tsx`**: Baris #03 menampilkan status intuitif seperti `Udara Bersih (1142 ADC · 1380 mV)` dengan aksen warna dinamis.
+   - **`HeroSection.tsx`**: Slide 3 menampilkan `Udara Bersih` sebagai headline metrik utama.
+   - **`FacilitiesAnalyticsSection.tsx`**: Header gelombang gas menyajikan badge status kualitas udara real-time.
+   - **`ZoneTrustSection.tsx`**: HUD Zona 3 diperbarui menampilkan status buffer udara bersih vs tercemar gas.
+   - **`useAlertEngine.ts`**: Peringatan gas cerdas memicu notifikasi peringatan saat udara tercemar gas ($\ge 2600\text{ ADC}$) atau status bahaya ($\ge 3400\text{ ADC}$).
+   - **Pengujian & Kualitas**: Test suite meningkat menjadi **51 / 51 lulus (100%)** dan linter bersih tanpa error.
+
+---
+
 ## 3. Manifestasi Struktur Berkas Proyek
 
 ```
@@ -371,16 +400,16 @@ SmartCity/
 
 | Kategori Pengujian | Instrumen | Hasil / Status | Keterangan |
 |---|---|---|---|
-| **Pemeriksaan Linter** | `oxlint` (116 rules) | **0 Warning, 0 Error** | Diuji pada 43 berkas dalam 84ms |
+| **Pemeriksaan Linter** | `oxlint` (116 rules) | **0 Warning, 0 Error** | Diuji pada 43 berkas dalam 92ms |
 | **Kompilasi TypeScript** | `tsc -b` | **0 Error** | Mode ketat (*strict mode*) aktif tanpa tipe implisit `any` |
-| **Unit Testing: Parser** | `vitest` | **18 / 18 Lulus** | Menguji JSON korup, batas fisik sensor, rain sensor, & ultrasonic water distance/level |
-| **Unit Testing: Store** | `vitest` | **8 / 8 Lulus** | Menguji paket duplikat, watchdog 15s, counter |
+| **Unit Testing: Parser** | `vitest` | **19 / 19 Lulus** | Menguji JSON korup, batas fisik sensor, rain sensor, ultrasonic, & air quality status |
+| **Unit Testing: Store & Formatter** | `vitest` | **9 / 9 Lulus** | Menguji paket duplikat, watchdog 15s, counter, & grade kualitas udara |
 | **Unit Testing: Ring Buffer** | `vitest` | **5 / 5 Lulus** | Menguji batas 300 sampel, $O(1)$ eviction |
 | **Unit Testing: MQTT Client** | `vitest` | **3 / 3 Lulus** | Menguji backoff reconnect, status transisi |
 | **Unit Testing: Security** | `vitest` | **5 / 5 Lulus** | Menguji sanitasi prototype pollution & data fiktif |
-| **Unit Testing: Alert Engine**| `vitest` | **9 / 9 Lulus** | Menguji persistensi alert, bahaya suhu/gas, presipitasi hujan, & banjir ultrasonik |
-| **Total Test Suite** | `vitest run` | **48 / 48 Lulus (100%)** | Durasi eksekusi ~1.25 detik |
-| **Production Build** | `vite build` | **Sukses (1.09s)** | Menghasilkan bundel teroptimasi di direktori `dist/` |
+| **Unit Testing: Alert Engine**| `vitest` | **10 / 10 Lulus** | Menguji persistensi alert, bahaya suhu/gas, presipitasi hujan, banjir, & polusi gas |
+| **Total Test Suite** | `vitest run` | **51 / 51 Lulus (100%)** | Durasi eksekusi ~1.22 detik |
+| **Production Build** | `vite build` | **Sukses (1.16s)** | Menghasilkan bundel teroptimasi di direktori `dist/` |
 
 ---
 
@@ -390,7 +419,7 @@ Antarmuka ini terhubung dengan firmware mikrokontroler di direktori [`SmartCIty-
 
 - **Mikrokontroler:** Espressif ESP32-S3 (Wi-Fi 2.4GHz 802.11 b/g/n)
 - **Sensor Suhu & Kelembapan:** Aosong DHT22 (AM2302) pada Pin GPIO 6
-- **Sensor Kualitas Udara:** Winsen MQ-135 pada Pin Analog GPIO 7 (ADC 12-bit ADC1, attenuasi 11dB, voltage divider 10k/15k)
+- **Sensor Kualitas Udara & Gas:** Winsen MQ-135 pada Pin Analog GPIO 7 (ADC 12-bit ADC1, attenuasi 11dB, voltage divider 10k/15k). Mengeluarkan status empiris ramah manusia (`Udara Bersih`, `Sedang`, `Tercemar Gas`, `Sangat Tercemar`).
 - **Sensor Hujan (Presipitasi):** LM393 Rain Plate pada Pin Analog GPIO 8 (ADC1 Channel 7, attenuasi 11dB)
 - **Sensor Muka Air Sungai (Deteksi Banjir):** Sensor Ultrasonik HC-SR04 / JSN-SR04T pada Pin GPIO 13 (Trigger, Output Digital) & GPIO 12 (Echo, Input Digital). Rentang acuan 30.0 cm, logika ketinggian banjir inversi ($h = 30.0\text{ cm} - d$).
 - **Topik MQTT Telemetri:** `aethersense/{device_id}/telemetry` (QoS 0, frekuensi interval 5000ms)
@@ -407,6 +436,8 @@ Antarmuka ini terhubung dengan firmware mikrokontroler di direktori [`SmartCIty-
     "mq135_raw": 1142,
     "mq135_adc_mv": 920,
     "mq135_sensor_mv": 1380,
+    "air_quality_status": "Udara Bersih",
+    "is_gas_polluted": false,
     "rain_raw": 3950,
     "rain_status": "Kering",
     "is_raining": false,

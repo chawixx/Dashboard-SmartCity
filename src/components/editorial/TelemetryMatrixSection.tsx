@@ -1,4 +1,5 @@
 import { type TelemetryData } from '../../telemetry/types';
+import { getAirQualityGrade } from '../../telemetry/formatters';
 import { ArrowUpRight } from 'lucide-react';
 
 interface TelemetryMatrixSectionProps {
@@ -12,6 +13,8 @@ export function TelemetryMatrixSection({
   formattedUptime,
   onSelectParam,
 }: TelemetryMatrixSectionProps) {
+  const gasGrade = getAirQualityGrade(telemetry?.mq135_raw, telemetry?.air_quality_status);
+
   const parameters = [
     {
       index: '01',
@@ -31,11 +34,15 @@ export function TelemetryMatrixSection({
     },
     {
       index: '03',
-      title: 'Sensor Gas & Partikel (MQ135)',
-      value: telemetry ? `${telemetry.mq135_raw} ADC (${telemetry.mq135_sensor_mv.toFixed(0)} mV)` : '---- ADC',
-      description: 'Pembacaan resistansi analog ruang udara Alun-Alun terhadap asap kendaraan dan emisi sekitar.',
+      title: 'Kualitas Udara & Gas (MQ135)',
+      value: telemetry
+        ? `${gasGrade.label} (${telemetry.mq135_raw} ADC · ${telemetry.mq135_sensor_mv.toFixed(0)} mV)`
+        : '---- ADC',
+      description: telemetry
+        ? gasGrade.description
+        : 'Indikator deteksi kebersihan udara dan konsentrasi emisi gas ruang terbuka Alun-Alun.',
       anchor: '#analytics',
-      highlightColor: 'var(--brand)',
+      highlightColor: gasGrade.color,
     },
     {
       index: '04',

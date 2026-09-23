@@ -7,7 +7,7 @@
 // SENSOR CONFIGURATION
 // ============================================================
 
-#define DHT_PIN 5
+#define DHT_PIN 6
 #define DHT_TYPE DHT22
 
 #define MQ135_PIN 7
@@ -114,6 +114,8 @@ float humidityPercent = NAN;
 uint16_t mq135Raw = 0;
 uint32_t mq135AdcMv = 0;
 float mq135SensorMv = 0.0f;
+String airQualityStatus = "Udara Bersih";
+bool isGasPolluted = false;
 
 uint16_t rainRaw = 4095;
 bool isRaining = false;
@@ -366,6 +368,22 @@ void readMQ135() {
         mq135AdcMv *
         ((MQ135_R1 + MQ135_R2) /
          MQ135_R2);
+
+    // Human-readable Air Quality & Gas Pollution Classification
+    // MQ135: Nilai ADC / tegangan semakin tinggi ketika mendeteksi gas/asap
+    if (mq135Raw < 1500) {
+        airQualityStatus = "Udara Bersih";
+        isGasPolluted = false;
+    } else if (mq135Raw < 2500) {
+        airQualityStatus = "Sedang";
+        isGasPolluted = false;
+    } else if (mq135Raw < 3400) {
+        airQualityStatus = "Tercemar Gas";
+        isGasPolluted = true;
+    } else {
+        airQualityStatus = "Sangat Tercemar";
+        isGasPolluted = true;
+    }
 }
 
 // ============================================================
@@ -580,6 +598,14 @@ void publishTelemetry() {
         mq135SensorMv,
         2
     );
+    payload += ",";
+
+    payload += "\"air_quality_status\":\"";
+    payload += airQualityStatus;
+    payload += "\",";
+
+    payload += "\"is_gas_polluted\":";
+    payload += isGasPolluted ? "true" : "false";
     payload += ",";
 
     payload += "\"rain_raw\":";

@@ -89,6 +89,8 @@ aethersense/{device_id}/telemetry
   "mq135_raw": 1852,
   "mq135_adc_mv": 1478,
   "mq135_sensor_mv": 2463.33,
+  "air_quality_status": "Udara Bersih",
+  "is_gas_polluted": false,
   "rain_raw": 3950,
   "rain_status": "Kering",
   "is_raining": false,
@@ -113,6 +115,8 @@ aethersense/{device_id}/telemetry
 | `mq135_raw` | `number` | ADC count | $0 \dots 4095$ | Raw 12-bit analog reading from ESP32 ADC1. |
 | `mq135_adc_mv` | `number` | mV | $0 \dots 3300$ | Calibrated voltage at ESP32 input pin. |
 | `mq135_sensor_mv`| `number` | mV | $0 \dots 5000$ | Inferred voltage at MQ-135 sensor output. |
+| `air_quality_status`| `string` (opt)| — | `Udara Bersih`, `Sedang`, `Tercemar Gas`, `Sangat Tercemar` | Human-readable gas air quality classification. |
+| `is_gas_polluted`| `boolean` (opt)| — | `true` / `false` | Hazardous gas / smoke contamination flag. |
 | `rain_raw` | `number` (opt)| ADC count | $0 \dots 4095$ | Raw 12-bit analog reading from Rain Sensor (Pin 8, lower = wetter). |
 | `rain_status` | `string` (opt)| — | `Kering`, `Gerimis`, `Hujan Sedang`, `Hujan Lebat` | Human-readable precipitation classification. |
 | `is_raining` | `boolean` (opt)| — | `true` / `false` | Precipitation presence flag based on threshold. |

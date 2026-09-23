@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { ArrowLeft, ArrowRight, Radio, Compass, Sparkles, MapPin } from 'lucide-react';
 import type { TelemetryData } from '../../telemetry/types';
+import { getAirQualityGrade } from '../../telemetry/formatters';
 
 interface ZoneTrustSectionProps {
   lastReceivedAt: number | null;
@@ -80,10 +81,11 @@ export function ZoneTrustSection({ lastReceivedAt, telemetry }: ZoneTrustSection
       coordinates: "6°52'07\"S 109°07'52\"E",
       hudMetric: {
         label: 'Kualitas Udara & Akustik',
-        getValue: (t) => (t ? `${t.mq135_raw} raw` : '1120 raw'),
+        getValue: (t) => (t ? `${getAirQualityGrade(t.mq135_raw, t.air_quality_status).label} (${t.mq135_raw} ADC)` : 'Udara Bersih (1120 ADC)'),
         status: (t) => {
           if (!t) return 'Buffer Bersih';
-          return t.mq135_raw < 1500 ? 'Buffer Bersih' : 'Partikulat Terdeteksi';
+          const grade = getAirQualityGrade(t.mq135_raw, t.air_quality_status);
+          return grade.isPolluted ? 'Tercemar Gas' : 'Buffer Bersih';
         },
         accent: '#10b981',
       },

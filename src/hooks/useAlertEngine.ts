@@ -62,14 +62,23 @@ export function evaluateTelemetryViolations(
       };
     }
 
-    // 3. Check MQ135 Gas / Smoke
-    if (telemetry.mq135_raw >= 3400) {
+    // 3. Check MQ135 Gas / Smoke / Air Quality
+    const isGasAlert =
+      telemetry.is_gas_polluted ||
+      telemetry.air_quality_status === 'Tercemar Gas' ||
+      telemetry.air_quality_status === 'Sangat Tercemar' ||
+      telemetry.mq135_raw >= 2600;
+
+    if (isGasAlert) {
+      const isSevere = telemetry.air_quality_status === 'Sangat Tercemar' || telemetry.mq135_raw >= 3400;
       violations['gas_high'] = {
         type: 'gas',
-        level: telemetry.mq135_raw >= 3950 ? 'danger' : 'warning',
-        title: 'Akumulasi Gas / Asap Terdeteksi',
-        message: `Pembacaan analog MQ135 mencapai ${telemetry.mq135_raw} ADC (${telemetry.mq135_sensor_mv.toFixed(0)} mV), menunjukkan konsentrasi emisi atau asap tinggi di area stasiun.`,
-        metricValue: `${telemetry.mq135_raw} ADC`,
+        level: isSevere ? 'danger' : 'warning',
+        title: isSevere ? 'Udara Sangat Tercemar Gas / Asap' : 'Udara Tercemar Gas / Asap',
+        message: isSevere
+          ? `Sensor MQ-135 mendeteksi udara sangat tercemar (${telemetry.mq135_raw} ADC, ${telemetry.mq135_sensor_mv.toFixed(0)} mV). Konsentrasi gas buang atau asap pekat terdeteksi di ruang terbuka Alun-Alun.`
+          : `Sensor MQ-135 mendeteksi kualitas udara tercemar gas (${telemetry.mq135_raw} ADC, ${telemetry.mq135_sensor_mv.toFixed(0)} mV). Waspada akumulasi emisi kendaraan di sekitar kawasan.`,
+        metricValue: telemetry.air_quality_status || (isSevere ? 'SANGAT TERCEMAR' : 'TERCEMAR GAS'),
       };
     }
 
