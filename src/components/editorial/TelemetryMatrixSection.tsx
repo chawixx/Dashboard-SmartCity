@@ -18,7 +18,7 @@ export function TelemetryMatrixSection({
   const parameters = [
     {
       index: '01',
-      title: 'Temperatur Ambien (DHT22)',
+      title: 'Suhu Udara Ambien (DHT22)',
       value: telemetry ? `${telemetry.temperature_c.toFixed(2)} °C` : '--.-- °C',
       description: 'Suhu mikro di area terbuka rumput sintetis Alun-Alun Kota Tegal dengan dinamika panas maritim.',
       anchor: '#analytics',
@@ -34,7 +34,7 @@ export function TelemetryMatrixSection({
     },
     {
       index: '03',
-      title: 'Kualitas Udara & Gas (MQ135)',
+      title: 'Kualitas Udara & Gas (MQ-135)',
       value: telemetry
         ? `${gasGrade.label} (${telemetry.mq135_raw} ADC · ${telemetry.mq135_sensor_mv.toFixed(0)} mV)`
         : '---- ADC',
@@ -46,19 +46,19 @@ export function TelemetryMatrixSection({
     },
     {
       index: '04',
-      title: 'Presipitasi & Curah Hujan (Pin 8)',
+      title: 'Presipitasi & Curah Hujan (Rain Sensor)',
       value: telemetry?.rain_status
         ? `${telemetry.rain_status} (${telemetry.rain_raw ?? '----'} ADC)`
         : telemetry?.rain_raw !== undefined
         ? `${telemetry.rain_raw} ADC`
         : 'N/A',
-      description: 'Deteksi tingkat kebasahan dan tetesan air hujan pada pelat sensor analog GPIO 8 untuk pemantauan cuaca basah Alun-Alun.',
+      description: 'Deteksi tingkat kebasahan dan tetesan air hujan pada modul Rain Sensor untuk pemantauan cuaca basah Alun-Alun.',
       anchor: '#analytics',
       highlightColor: 'var(--brand-light)',
     },
     {
       index: '05',
-      title: 'Sensor Ultrasonik Muka Air Sungai (Pin 13 & 12)',
+      title: 'Ketinggian Muka Air Sungai (Ultrasonic Sensor)',
       value: telemetry?.flood_status
         ? `${telemetry.flood_status} (${telemetry.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm` : ''}${telemetry.water_distance_cm !== undefined ? ` · Jarak ${telemetry.water_distance_cm.toFixed(1)} cm` : ''})`
         : telemetry?.water_distance_cm !== undefined
@@ -70,7 +70,7 @@ export function TelemetryMatrixSection({
     },
     {
       index: '06',
-      title: 'Transmisi Node IoT (ESP32-S3)',
+      title: 'Kekuatan Sinyal & Uptime (ESP32-S3)',
       value: telemetry ? `${telemetry.wifi_rssi_dbm} dBm · Up ${formattedUptime}` : '-- dBm',
       description: 'Kekuatan sinyal Wi-Fi transceiver ESP32-S3 dan jam uptime pemrosesan telemetri.',
       anchor: '#stats',
