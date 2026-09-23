@@ -190,6 +190,16 @@ export function parseTelemetryPayload(
     }
   }
 
+  if (obj.water_distance_cm !== undefined) {
+    if (!isValidNumber(obj.water_distance_cm, TELEMETRY_LIMITS.water_distance_cm.min, TELEMETRY_LIMITS.water_distance_cm.max)) {
+      return {
+        success: false,
+        error: `Invalid "water_distance_cm": ${obj.water_distance_cm} (expected ${TELEMETRY_LIMITS.water_distance_cm.min}..${TELEMETRY_LIMITS.water_distance_cm.max} cm)`,
+        rawPayload: raw,
+      };
+    }
+  }
+
   // Construct typed and clean TelemetryData object
   const validTelemetry: TelemetryData = {
     device_id: deviceId,
@@ -222,6 +232,10 @@ export function parseTelemetryPayload(
 
   if (obj.water_level_cm !== undefined) {
     validTelemetry.water_level_cm = Math.round((obj.water_level_cm as number) * 10) / 10;
+  }
+
+  if (obj.water_distance_cm !== undefined) {
+    validTelemetry.water_distance_cm = Math.round((obj.water_distance_cm as number) * 10) / 10;
   }
 
   if (typeof obj.flood_status === 'string' && obj.flood_status.trim().length > 0) {

@@ -103,11 +103,11 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
     expect(violations['rain_alert'].title).toBe('Presipitasi Hujan Lebat');
   });
 
-  it('detects flood alert when flood_status is Siaga/Bahaya or water_level_raw >= 1500', () => {
+  it('detects flood alert when ultrasonic distance is small or flood_status is Siaga/Bahaya', () => {
     const floodTelemetry: TelemetryData = {
       ...normalTelemetry,
-      water_level_raw: 3400,
-      water_level_cm: 3.8,
+      water_distance_cm: 4.5,
+      water_level_cm: 25.5,
       flood_status: 'Bahaya Banjir',
       is_flood_warning: true,
     };
@@ -117,5 +117,6 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
     expect(violations['flood_alert'].type).toBe('flood');
     expect(violations['flood_alert'].level).toBe('danger');
     expect(violations['flood_alert'].title).toContain('Muka Air Sungai Meluap');
+    expect(violations['flood_alert'].message).toContain('Sensor ultrasonik (Pin 13 & 12)');
   });
 });

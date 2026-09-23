@@ -22,6 +22,7 @@ export interface TelemetryData {
   is_raining?: boolean;
   water_level_raw?: number;
   water_level_cm?: number;
+  water_distance_cm?: number;
   flood_status?: FloodStatus;
   is_flood_warning?: boolean;
 }
@@ -45,4 +46,5 @@ export const TELEMETRY_LIMITS = {
   rain_raw: { min: 0, max: 4095 },
   water_level_raw: { min: 0, max: 4095 },
   water_level_cm: { min: 0, max: 500 },
+  water_distance_cm: { min: 0, max: 500 },
 } as const;

@@ -18,6 +18,7 @@ export interface TelemetryHistoryPoint {
   is_raining?: boolean;
   water_level_raw?: number;
   water_level_cm?: number;
+  water_distance_cm?: number;
   flood_status?: string;
   is_flood_warning?: boolean;
   formattedTime: string;
@@ -132,6 +133,7 @@ export function createHistoryPoint(telemetry: TelemetryData): TelemetryHistoryPo
     is_raining: telemetry.is_raining,
     water_level_raw: telemetry.water_level_raw,
     water_level_cm: telemetry.water_level_cm,
+    water_distance_cm: telemetry.water_distance_cm,
     flood_status: telemetry.flood_status,
     is_flood_warning: telemetry.is_flood_warning,
     formattedTime,

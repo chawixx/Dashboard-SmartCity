@@ -53,10 +53,10 @@ export function HeroSection({
       color: 'var(--brand-light)',
     },
     {
-      label: 'WATER LEVEL (PIN 10)',
-      title: 'Level Air Sungai',
+      label: 'ULTRASONIC (PIN 13/12)',
+      title: 'Muka Air Sungai',
       value: telemetry?.flood_status ?? (telemetry?.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm` : '--'),
-      sub: telemetry?.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm (${telemetry.water_level_raw ?? '--'} ADC)` : '-- ADC',
+      sub: telemetry?.water_distance_cm !== undefined ? `Jarak ${telemetry.water_distance_cm.toFixed(1)} cm (Maks 30 cm)` : (telemetry?.water_level_cm !== undefined ? `Tinggi ${telemetry.water_level_cm.toFixed(1)} cm` : '-- cm'),
       icon: <Waves size={16} color={telemetry?.flood_status === 'Bahaya Banjir' || telemetry?.flood_status === 'Siaga' ? '#f43f5e' : 'var(--brand-light)'} />,
       color: telemetry?.flood_status === 'Bahaya Banjir' || telemetry?.flood_status === 'Siaga' ? '#f43f5e' : 'var(--brand-light)',
     },

@@ -99,11 +99,16 @@ export function ZoneTrustSection({ lastReceivedAt, telemetry }: ZoneTrustSection
       coordinates: "6°52'12\"S 109°08'10\"E",
       hudMetric: {
         label: 'Debit & Muka Air Sungai',
-        getValue: (t) => (t?.water_level_cm !== undefined ? `${t.water_level_cm.toFixed(1)} cm` : t ? `${t.water_level_raw ?? '--'} ADC` : '0.0 cm'),
+        getValue: (t) =>
+          t?.water_level_cm !== undefined
+            ? `${t.water_level_cm.toFixed(1)} cm`
+            : t?.water_distance_cm !== undefined
+            ? `Jarak ${t.water_distance_cm.toFixed(1)} cm`
+            : '0.0 cm',
         status: (t) => (t?.flood_status ? t.flood_status : 'Aman Normal'),
         accent: '#06b6d4',
       },
-      features: ['Pemantauan Strip Celup Pin 10', 'Early Warning Rob & Banjir', 'Kapasitas Tampung Kanal'],
+      features: ['Sensor Ultrasonik Pin 13/12', 'Early Warning Rob & Banjir', 'Kapasitas Tampung Kanal'],
     },
   ];
 

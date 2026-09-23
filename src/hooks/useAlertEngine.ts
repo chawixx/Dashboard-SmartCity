@@ -86,19 +86,29 @@ export function evaluateTelemetryViolations(
       };
     }
 
-    // 5. Check Water Level / Flood Sensor (Pin 10)
+    // 5. Check Ultrasonic Flood Sensor (Trig Pin 13, Echo Pin 12)
     if (
       telemetry.is_flood_warning ||
+      (telemetry.water_distance_cm !== undefined && telemetry.water_distance_cm <= 12.0) ||
+      (telemetry.water_level_cm !== undefined && telemetry.water_level_cm >= 18.0) ||
       (telemetry.water_level_raw !== undefined && telemetry.water_level_raw >= 1500) ||
       telemetry.flood_status === 'Siaga' ||
       telemetry.flood_status === 'Bahaya Banjir'
     ) {
       const isCritical =
+        (telemetry.water_distance_cm !== undefined && telemetry.water_distance_cm <= 6.0) ||
+        (telemetry.water_level_cm !== undefined && telemetry.water_level_cm >= 24.0) ||
         (telemetry.water_level_raw !== undefined && telemetry.water_level_raw >= 3300) ||
         telemetry.flood_status === 'Bahaya Banjir';
       const isSiaga =
+        (telemetry.water_distance_cm !== undefined && telemetry.water_distance_cm <= 12.0) ||
+        (telemetry.water_level_cm !== undefined && telemetry.water_level_cm >= 18.0) ||
         (telemetry.water_level_raw !== undefined && telemetry.water_level_raw >= 2600) ||
         telemetry.flood_status === 'Siaga';
+
+      const distText = telemetry.water_distance_cm !== undefined ? `Jarak pantul: ${telemetry.water_distance_cm.toFixed(1)} cm` : '';
+      const levelText = telemetry.water_level_cm !== undefined ? `Tinggi muka air: ${telemetry.water_level_cm.toFixed(1)} cm` : '';
+      const detailText = [distText, levelText].filter(Boolean).join(' · ');
 
       violations['flood_alert'] = {
         type: 'flood',
@@ -108,7 +118,7 @@ export function evaluateTelemetryViolations(
           : isSiaga
           ? 'Siaga Banjir: Aliran Sungai Alun-Alun Kritis'
           : 'Waspada: Peningkatan Debit Air Sungai',
-        message: `Sensor ketinggian air (Pin 10) mendeteksi muka air ${telemetry.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm` : ''} (${telemetry.water_level_raw ?? '--'} ADC). Waspada potensi luapan saluran drainase Alun-Alun.`,
+        message: `Sensor ultrasonik (Pin 13 & 12) mendeteksi kenaikan air sungai (${detailText || `${telemetry.water_level_raw ?? '--'} ADC`}). Waspada potensi luapan saluran drainase Alun-Alun.`,
         metricValue: telemetry.flood_status ?? (telemetry.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm` : 'BANJIR'),
       };
     }

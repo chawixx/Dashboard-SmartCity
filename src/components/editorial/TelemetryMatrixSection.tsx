@@ -51,13 +51,13 @@ export function TelemetryMatrixSection({
     },
     {
       index: '05',
-      title: 'Ketinggian Air Sungai & Saluran (Pin 10)',
+      title: 'Sensor Ultrasonik Muka Air Sungai (Pin 13 & 12)',
       value: telemetry?.flood_status
-        ? `${telemetry.flood_status} (${telemetry.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm` : `${telemetry.water_level_raw ?? '--'} ADC`})`
-        : telemetry?.water_level_raw !== undefined
-        ? `${telemetry.water_level_raw} ADC`
+        ? `${telemetry.flood_status} (${telemetry.water_level_cm !== undefined ? `${telemetry.water_level_cm.toFixed(1)} cm` : ''}${telemetry.water_distance_cm !== undefined ? ` · Jarak ${telemetry.water_distance_cm.toFixed(1)} cm` : ''})`
+        : telemetry?.water_distance_cm !== undefined
+        ? `Jarak ${telemetry.water_distance_cm.toFixed(1)} cm`
         : 'N/A',
-      description: 'Pemantauan debit muka air pada strip konduktif celup GPIO 10 untuk deteksi dini luapan dan mitigasi banjir Alun-Alun.',
+      description: 'Pengukuran jarak pantul ultrasonik ke muka air sungai Alun-Alun (maks 30 cm). Semakin kecil jaraknya menandakan debit banjir semakin tinggi meluap.',
       anchor: '#analytics',
       highlightColor: telemetry?.flood_status === 'Bahaya Banjir' || telemetry?.flood_status === 'Siaga' ? '#f43f5e' : 'var(--brand-light)',
     },

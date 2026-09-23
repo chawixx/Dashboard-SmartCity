@@ -18,6 +18,7 @@
    - [Epoch IV: Interaktivitas 3D Spatial Deck & Menu Hamburger "Air Menetes"](#epoch-iv-interaktivitas-3d-spatial-deck--menu-hamburger-air-menetes)
    - [Epoch V: Integrasi Rain Sensor (GPIO 8 / ADC1) & Sistem Peringatan Presipitasi](#epoch-v-integrasi-rain-sensor-gpio-8--adc1--sistem-peringatan-presipitasi)
    - [Epoch VI: Integrasi Water Level Sensor (GPIO 10 / ADC1) & Sistem Deteksi Banjir Sungai](#epoch-vi-integrasi-water-level-sensor-gpio-10--adc1--sistem-deteksi-banjir-sungai)
+   - [Epoch VII: Migrasi Deteksi Banjir ke Sensor Ultrasonik HC-SR04 (Trig Pin 13, Echo Pin 12, Maks 30cm, Logika Inversi)](#epoch-vii-migrasi-deteksi-banjir-ke-sensor-ultrasonik-hc-sr04-trig-pin-13-echo-pin-12-maks-30cm-logika-inversi)
 3. [Manifestasi Struktur Berkas Proyek](#3-manifestasi-struktur-berkas-proyek)
 4. [Matriks Verifikasi, Keamanan & Pengujian Kualitas](#4-matriks-verifikasi-keamanan--pengujian-kualitas)
 5. [Spesifikasi Hardware & Kontrak Komunikasi Edge](#5-spesifikasi-hardware--kontrak-komunikasi-edge)
@@ -234,6 +235,36 @@ Berdasarkan dokumen arahan [`CHANGE_THEME.md`](file:///home/narr/Projects/SmartC
 
 ---
 
+### Epoch VII: Migrasi Deteksi Banjir ke Sensor Ultrasonik HC-SR04 (Trig Pin 13, Echo Pin 12, Maks 30cm, Logika Inversi)
+
+1. **Rasionalisasi Pergantian Hardware:**
+   - Menggantikan sensor strip tembaga celup resistif analog (yang rentan korosi elektrolisis dan endapan lumpur sungai) dengan **Sensor Jarak Ultrasonik (HC-SR04 / JSN-SR04T)** non-kontak.
+   - Pemasangan sensor di atas bibir sungai menghadap ke permukaan air dengan tinggi acuan penempatan maksimum **30.0 cm** di atas dasar sungai/kondisi surut.
+2. **Alokasi Pin Digital Bebas Konflik:**
+   - **Trigger (TRIG):** **GPIO 13** (Digital Output) — Pulsa trigger 10 mikrodetik.
+   - **Echo (ECHO):** **GPIO 12** (Digital Input) — Mengukur durasi pantulan gelombang suara ultrasonik via `pulseIn()`.
+   - Menggunakan pin digital murni (bukan pembacaan ADC analog), sehingga terbebas 100% dari interferensi radio Wi-Fi ESP32-S3.
+3. **Logika Ketinggian Banjir Inversi (Inverted Flood Metric):**
+   - Jarak mentah ultrasonik ($d$) berbanding terbalik dengan tinggi banjir: semakin kecil jarak terukur ke sensor, semakin tinggi muka air sungai.
+   - Rumus tinggi muka air banjir: $h = \max(0.0, 30.0\text{ cm} - d)$.
+   - Ambang batas status sungai terstandardisasi:
+     - $d > 20.0\text{ cm}$ ($h < 10.0\text{ cm}$): `"Aman"` (debit normal / surut, `is_flood_warning: false`).
+     - $12.0 < d \le 20.0\text{ cm}$ ($h = 10.0 \dots 18.0\text{ cm}$): `"Waspada"` (kenaikan debit sungai, `is_flood_warning: false`).
+     - $6.0 < d \le 12.0\text{ cm}$ ($h = 18.0 \dots 24.0\text{ cm}$): `"Siaga"` (kritis mendekati bibir kanal, `is_flood_warning: true`).
+     - $d \le 6.0\text{ cm}$ ($h \ge 24.0\text{ cm}$): `"Bahaya Banjir"` (luapan banjir berbahaya, `is_flood_warning: true`).
+4. **Implementasi Firmware ESP32-S3 (`SmartCIty-ESP32.ino`):**
+   - Menggantikan `WATER_LEVEL_PIN` dengan `#define TRIG_PIN 13`, `#define ECHO_PIN 12`, dan `const float MAX_RIVER_DEPTH_CM = 30.0f;`.
+   - Mengimplementasikan `readUltrasonicSensor()` dengan sanitasi timeout 30ms (jarak max ~500cm), clamping batas 30cm, kalkulasi tinggi air inversi, dan penentuan status siaga.
+   - Mengirimkan `water_distance_cm`, `water_level_cm`, `flood_status`, dan `is_flood_warning` ke MQTT payload JSON.
+5. **Pembaruan Kontrak, Parser, Alert Engine, & UI Dashboard:**
+   - Memperbarui `src/telemetry/types.ts` dan `MQTT-CONTRACT.md` dengan atribut `water_distance_cm`.
+   - Memperbarui `src/mqtt/parser.ts` untuk memvalidasi dan mem-parse jarak ultrasonik dengan perlindungan rentang $0 \dots 500\text{ cm}$.
+   - Memperbarui `useAlertEngine.ts` untuk memicu alert bahaya banjir berdasarkan jarak ultrasonik $\le 12\text{ cm}$ atau tinggi air $\ge 18\text{ cm}$.
+   - Memperbarui `TelemetryMatrixSection.tsx` (baris #05: Pin 13 & 12), `HeroSection.tsx` (Slide 5: Ultrasonic Pin 13/12), `ZoneTrustSection.tsx` (Zone 4 HUD: clearance ultrasonik & tinggi muka air), dan simulator interaktif di `src/App.tsx`.
+   - Menambahkan unit test parser dan alert engine baru (total suite meningkat menjadi **48 / 48 lulus**).
+
+---
+
 ## 3. Manifestasi Struktur Berkas Proyek
 
 ```
@@ -342,13 +373,13 @@ SmartCity/
 |---|---|---|---|
 | **Pemeriksaan Linter** | `oxlint` (116 rules) | **0 Warning, 0 Error** | Diuji pada 43 berkas dalam 84ms |
 | **Kompilasi TypeScript** | `tsc -b` | **0 Error** | Mode ketat (*strict mode*) aktif tanpa tipe implisit `any` |
-| **Unit Testing: Parser** | `vitest` | **16 / 16 Lulus** | Menguji JSON korup, batas fisik sensor, rain sensor, & water level |
+| **Unit Testing: Parser** | `vitest` | **18 / 18 Lulus** | Menguji JSON korup, batas fisik sensor, rain sensor, & ultrasonic water distance/level |
 | **Unit Testing: Store** | `vitest` | **8 / 8 Lulus** | Menguji paket duplikat, watchdog 15s, counter |
 | **Unit Testing: Ring Buffer** | `vitest` | **5 / 5 Lulus** | Menguji batas 300 sampel, $O(1)$ eviction |
 | **Unit Testing: MQTT Client** | `vitest` | **3 / 3 Lulus** | Menguji backoff reconnect, status transisi |
 | **Unit Testing: Security** | `vitest` | **5 / 5 Lulus** | Menguji sanitasi prototype pollution & data fiktif |
-| **Unit Testing: Alert Engine**| `vitest` | **9 / 9 Lulus** | Menguji persistensi alert, bahaya suhu/gas, presipitasi hujan, & banjir |
-| **Total Test Suite** | `vitest run` | **46 / 46 Lulus (100%)** | Durasi eksekusi ~1.19 detik |
+| **Unit Testing: Alert Engine**| `vitest` | **9 / 9 Lulus** | Menguji persistensi alert, bahaya suhu/gas, presipitasi hujan, & banjir ultrasonik |
+| **Total Test Suite** | `vitest run` | **48 / 48 Lulus (100%)** | Durasi eksekusi ~1.25 detik |
 | **Production Build** | `vite build` | **Sukses (1.09s)** | Menghasilkan bundel teroptimasi di direktori `dist/` |
 
 ---
@@ -361,7 +392,7 @@ Antarmuka ini terhubung dengan firmware mikrokontroler di direktori [`SmartCIty-
 - **Sensor Suhu & Kelembapan:** Aosong DHT22 (AM2302) pada Pin GPIO 6
 - **Sensor Kualitas Udara:** Winsen MQ-135 pada Pin Analog GPIO 7 (ADC 12-bit ADC1, attenuasi 11dB, voltage divider 10k/15k)
 - **Sensor Hujan (Presipitasi):** LM393 Rain Plate pada Pin Analog GPIO 8 (ADC1 Channel 7, attenuasi 11dB)
-- **Sensor Level Air (Banjir Sungai):** Resistive Copper Strip pada Pin Analog GPIO 10 (ADC1 Channel 9, attenuasi 11dB)
+- **Sensor Muka Air Sungai (Deteksi Banjir):** Sensor Ultrasonik HC-SR04 / JSN-SR04T pada Pin GPIO 13 (Trigger, Output Digital) & GPIO 12 (Echo, Input Digital). Rentang acuan 30.0 cm, logika ketinggian banjir inversi ($h = 30.0\text{ cm} - d$).
 - **Topik MQTT Telemetri:** `aethersense/{device_id}/telemetry` (QoS 0, frekuensi interval 5000ms)
 - **Topik Status LWT:** `aethersense/{device_id}/status` (QoS 1, retain: true, LWT: `"offline"`)
 - **Struktur Payload Telemetri Standar:**
@@ -379,8 +410,8 @@ Antarmuka ini terhubung dengan firmware mikrokontroler di direktori [`SmartCIty-
     "rain_raw": 3950,
     "rain_status": "Kering",
     "is_raining": false,
-    "water_level_raw": 680,
-    "water_level_cm": 0.4,
+    "water_distance_cm": 28.5,
+    "water_level_cm": 1.5,
     "flood_status": "Aman",
     "is_flood_warning": false,
     "wifi_rssi_dbm": -64

@@ -244,6 +244,54 @@ describe('Telemetry Parser (PRD Section 7, 8, 17)', () => {
       expect(result.error).toContain('water_level_raw');
     }
   });
+
+  it('successfully parses ultrasonic flood sensor metrics (water_distance_cm & water_level_cm)', () => {
+    const ultrasonicPayload = JSON.stringify({
+      device_id: 'esp32s3-ABCD12345678',
+      sequence: 62,
+      timestamp: 1790041200,
+      uptime_s: 440,
+      temperature_c: 27.5,
+      humidity_percent: 78.0,
+      mq135_raw: 1450,
+      mq135_adc_mv: 1150,
+      mq135_sensor_mv: 1950,
+      water_distance_cm: 8.5,
+      water_level_cm: 21.5,
+      flood_status: 'Siaga',
+      is_flood_warning: true,
+      wifi_rssi_dbm: -58,
+    });
+    const result = parseTelemetryPayload(ultrasonicPayload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.water_distance_cm).toBe(8.5);
+      expect(result.data.water_level_cm).toBe(21.5);
+      expect(result.data.flood_status).toBe('Siaga');
+      expect(result.data.is_flood_warning).toBe(true);
+    }
+  });
+
+  it('rejects invalid water_distance_cm out of physical range', () => {
+    const invalidDistPayload = JSON.stringify({
+      device_id: 'esp32s3-ABCD12345678',
+      sequence: 63,
+      timestamp: 1790041200,
+      uptime_s: 445,
+      temperature_c: 27.5,
+      humidity_percent: 78.0,
+      mq135_raw: 1450,
+      mq135_adc_mv: 1150,
+      mq135_sensor_mv: 1950,
+      water_distance_cm: 999, // > 500
+      wifi_rssi_dbm: -58,
+    });
+    const result = parseTelemetryPayload(invalidDistPayload);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('water_distance_cm');
+    }
+  });
 });
 
 describe('Device Status Parser (PRD Section 14)', () => {

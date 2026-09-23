@@ -7,12 +7,14 @@
 // SENSOR CONFIGURATION
 // ============================================================
 
-#define DHT_PIN 6
+#define DHT_PIN 5
 #define DHT_TYPE DHT22
 
 #define MQ135_PIN 7
 #define RAIN_PIN 8
-#define WATER_LEVEL_PIN 10
+#define TRIG_PIN 13
+#define ECHO_PIN 12
+const float MAX_RIVER_DEPTH_CM = 30.0f;
 
 // ============================================================
 // WIFI CONFIGURATION
@@ -117,7 +119,7 @@ uint16_t rainRaw = 4095;
 bool isRaining = false;
 String rainStatus = "Kering";
 
-uint16_t waterLevelRaw = 0;
+float waterDistanceCm = 30.0f;
 float waterLevelCm = 0.0f;
 String floodStatus = "Aman";
 bool isFloodWarning = false;
@@ -398,54 +400,58 @@ void readRainSensor() {
 }
 
 // ============================================================
-// READ WATER LEVEL SENSOR (Pin 10 / ADC1 - River Flood Monitoring)
+// READ ULTRASONIC SENSOR (Trig Pin 13, Echo Pin 12 - Flood Detection)
+// Max range: 30.0 cm (smaller distance to water = higher flood level)
 // ============================================================
 
-void readWaterLevelSensor() {
-    const int samples = 10;
-    uint32_t rawSum = 0;
+void readUltrasonicSensor() {
+    // 1. Trigger ultrasonic burst (10µs pulse)
+    digitalWrite(TRIG_PIN, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN, LOW);
 
-    for (int i = 0; i < samples; i++) {
-        rawSum += analogRead(WATER_LEVEL_PIN);
-        delayMicroseconds(500);
+    // 2. Measure pulse duration on Echo pin (timeout 25000µs ~ 4.3 meters)
+    long duration = pulseIn(ECHO_PIN, HIGH, 25000);
+
+    // Speed of sound: 0.0343 cm/µs; distance = (duration * 0.0343) / 2
+    float rawDistance = (duration == 0) ? MAX_RIVER_DEPTH_CM : ((float)duration * 0.0343f) / 2.0f;
+
+    // Filter and clamp within max 30.0 cm
+    if (rawDistance > MAX_RIVER_DEPTH_CM || rawDistance <= 0.0f) {
+        waterDistanceCm = MAX_RIVER_DEPTH_CM;
+    } else {
+        waterDistanceCm = rawDistance;
     }
 
-    waterLevelRaw = rawSum / samples;
+    // Inverted logic: Smaller distance to sensor = higher flood water level
+    // waterLevelCm = 30.0 - waterDistanceCm
+    waterLevelCm = MAX_RIVER_DEPTH_CM - waterDistanceCm;
+    if (waterLevelCm < 0.0f) waterLevelCm = 0.0f;
 
-    // Resistive Copper Trace Sensor:
-    // Immersion depth ranges roughly 0 - 4.0 cm on standard 40mm PCB strip
-    // ADC 0 - ~400: Kering (Sensor di atas muka air)
-    // ADC 400 - 1500: Normal (0.5 - 1.5 cm)
-    // ADC 1500 - 2600: Waspada (1.5 - 2.8 cm)
-    // ADC 2600 - 3300: Siaga (2.8 - 3.5 cm)
-    // ADC > 3300: Bahaya Banjir (> 3.5 cm / Terendam Penuh)
-
-    if (waterLevelRaw < 400) {
-        waterLevelCm = 0.0f;
+    // River flood thresholds based on ultrasonic distance to water:
+    // Distance > 20 cm (Flood Height < 10 cm): Aman (debit normal / surut)
+    // Distance 12 - 20 cm (Flood Height 10 - 18 cm): Waspada (muka air naik)
+    // Distance 6 - 12 cm (Flood Height 18 - 24 cm): Siaga (kritis mendekati bibir saluran)
+    // Distance <= 6 cm (Flood Height >= 24 cm): Bahaya Banjir (meluap)
+    if (waterDistanceCm > 20.0f) {
         floodStatus = "Aman";
         isFloodWarning = false;
+    } else if (waterDistanceCm > 12.0f) {
+        floodStatus = "Waspada";
+        isFloodWarning = false;
+    } else if (waterDistanceCm > 6.0f) {
+        floodStatus = "Siaga";
+        isFloodWarning = true;
     } else {
-        waterLevelCm = ((float)(waterLevelRaw - 400) / 3200.0f) * 4.0f;
-        if (waterLevelCm > 4.5f) waterLevelCm = 4.5f;
-
-        if (waterLevelRaw >= 3300) {
-            floodStatus = "Bahaya Banjir";
-            isFloodWarning = true;
-        } else if (waterLevelRaw >= 2600) {
-            floodStatus = "Siaga";
-            isFloodWarning = true;
-        } else if (waterLevelRaw >= 1500) {
-            floodStatus = "Waspada";
-            isFloodWarning = false;
-        } else {
-            floodStatus = "Aman";
-            isFloodWarning = false;
-        }
+        floodStatus = "Bahaya Banjir";
+        isFloodWarning = true;
     }
 }
 
 // ============================================================
-// READ DHT22 + MQ135 + RAIN SENSOR + WATER LEVEL
+// READ DHT22 + MQ135 + RAIN SENSOR + ULTRASONIC FLOOD
 // ============================================================
 
 bool readSensors() {
@@ -476,7 +482,7 @@ bool readSensors() {
 
     readMQ135();
     readRainSensor();
-    readWaterLevelSensor();
+    readUltrasonicSensor();
 
     return true;
 }
@@ -590,9 +596,10 @@ void publishTelemetry() {
     payload += isRaining ? "true" : "false";
     payload += ",";
 
-    payload += "\"water_level_raw\":";
+    payload += "\"water_distance_cm\":";
     payload += String(
-        waterLevelRaw
+        waterDistanceCm,
+        1
     );
     payload += ",";
 
@@ -737,7 +744,11 @@ void setup() {
     analogReadResolution(12);
 
     pinMode(RAIN_PIN, INPUT);
-    pinMode(WATER_LEVEL_PIN, INPUT);
+
+    // Ultrasonic HC-SR04 / JSN-SR04T Pins (Trigger: 13, Echo: 12)
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+    digitalWrite(TRIG_PIN, LOW);
 
     analogSetPinAttenuation(
         MQ135_PIN,
@@ -746,11 +757,6 @@ void setup() {
 
     analogSetPinAttenuation(
         RAIN_PIN,
-        ADC_11db
-    );
-
-    analogSetPinAttenuation(
-        WATER_LEVEL_PIN,
         ADC_11db
     );
 

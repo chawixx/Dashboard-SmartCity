@@ -92,8 +92,8 @@ aethersense/{device_id}/telemetry
   "rain_raw": 3950,
   "rain_status": "Kering",
   "is_raining": false,
-  "water_level_raw": 720,
-  "water_level_cm": 0.4,
+  "water_distance_cm": 24.5,
+  "water_level_cm": 5.5,
   "flood_status": "Aman",
   "is_flood_warning": false,
   "wifi_rssi_dbm": -54
@@ -116,8 +116,8 @@ aethersense/{device_id}/telemetry
 | `rain_raw` | `number` (opt)| ADC count | $0 \dots 4095$ | Raw 12-bit analog reading from Rain Sensor (Pin 8, lower = wetter). |
 | `rain_status` | `string` (opt)| — | `Kering`, `Gerimis`, `Hujan Sedang`, `Hujan Lebat` | Human-readable precipitation classification. |
 | `is_raining` | `boolean` (opt)| — | `true` / `false` | Precipitation presence flag based on threshold. |
-| `water_level_raw` | `number` (opt)| ADC count | $0 \dots 4095$ | Raw 12-bit analog reading from Water Level Sensor (Pin 10, higher = deeper). |
-| `water_level_cm` | `number` (opt)| cm | $0.0 \dots 500.0$ | Estimated immersion depth on sensor strip / river surface. |
+| `water_distance_cm` | `number` (opt)| cm | $0.0 \dots 30.0$ | Jarak pantul ultrasonik (Trig 13, Echo 12) ke permukaan air (Maks 30 cm, makin kecil = makin banjir). |
+| `water_level_cm` | `number` (opt)| cm | $0.0 \dots 30.0$ | Ketinggian muka air banjir ($30.0 - \text{water\_distance\_cm}$). |
 | `flood_status` | `string` (opt)| — | `Aman`, `Waspada`, `Siaga`, `Bahaya Banjir` | River flood risk classification. |
 | `is_flood_warning` | `boolean` (opt)| — | `true` / `false` | Critical flood risk indicator. |
 | `wifi_rssi_dbm` | `number` | dBm | $-100 \dots 0$ | Wi-Fi Received Signal Strength Indicator. |
@@ -141,7 +141,7 @@ export interface TelemetryData {
   rain_raw?: number;
   rain_status?: RainStatus;
   is_raining?: boolean;
-  water_level_raw?: number;
+  water_distance_cm?: number;
   water_level_cm?: number;
   flood_status?: FloodStatus;
   is_flood_warning?: boolean;
