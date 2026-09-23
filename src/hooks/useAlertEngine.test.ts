@@ -10,9 +10,9 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
     uptime_s: 100,
     temperature_c: 28.5,
     humidity_percent: 65.0,
-    mq135_raw: 1600,
-    mq135_adc_mv: 1300,
-    mq135_sensor_mv: 2200,
+    mq135_raw: 220,
+    mq135_adc_mv: 180,
+    mq135_sensor_mv: 300,
     wifi_rssi_dbm: -55,
   };
 
@@ -68,11 +68,11 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
     expect(violations['humid_high'].title).toBe('Kelembaban Sangat Tinggi');
   });
 
-  it('detects high gas concentration / smoke on MQ135 >= 3400 ADC', () => {
+  it('detects high gas concentration / smoke on MQ135 > 600 ADC', () => {
     const highGasTelemetry: TelemetryData = {
       ...normalTelemetry,
-      mq135_raw: 3600,
-      mq135_sensor_mv: 4800,
+      mq135_raw: 750,
+      mq135_sensor_mv: 1200,
     };
 
     const violations = evaluateTelemetryViolations(highGasTelemetry, false);
@@ -81,12 +81,12 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
     expect(violations['gas_high'].title).toContain('Gas / Asap');
   });
 
-  it('detects gas pollution alert when is_gas_polluted or air_quality_status is Tercemar Gas', () => {
+  it('detects gas pollution alert when is_gas_polluted or air_quality_status is Tercemar', () => {
     const pollutedTelemetry: TelemetryData = {
       ...normalTelemetry,
-      mq135_raw: 2800,
-      mq135_sensor_mv: 3700,
-      air_quality_status: 'Tercemar Gas',
+      mq135_raw: 700,
+      mq135_sensor_mv: 1100,
+      air_quality_status: 'Tercemar',
       is_gas_polluted: true,
     };
 
@@ -94,7 +94,7 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
     expect(violations['gas_high']).toBeDefined();
     expect(violations['gas_high'].type).toBe('gas');
     expect(violations['gas_high'].level).toBe('warning');
-    expect(violations['gas_high'].title).toContain('Tercemar Gas');
+    expect(violations['gas_high'].title).toContain('Tercemar');
   });
 
   it('detects watchdog stale condition when node is silent >15s', () => {

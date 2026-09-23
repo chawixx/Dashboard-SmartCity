@@ -114,7 +114,7 @@ float humidityPercent = NAN;
 uint16_t mq135Raw = 0;
 uint32_t mq135AdcMv = 0;
 float mq135SensorMv = 0.0f;
-String airQualityStatus = "Udara Bersih";
+String airQualityStatus = "Normal / Cukup Baik";
 bool isGasPolluted = false;
 
 uint16_t rainRaw = 4095;
@@ -370,18 +370,21 @@ void readMQ135() {
          MQ135_R2);
 
     // Human-readable Air Quality & Gas Pollution Classification
-    // MQ135: Nilai ADC / tegangan semakin tinggi ketika mendeteksi gas/asap
-    if (mq135Raw < 1500) {
-        airQualityStatus = "Udara Bersih";
+    // Sangat Bersih: < 150
+    // Normal / Cukup Baik: < 350
+    // Polusi Ringan: < 600 (<= 600)
+    // Tercemar: > 600
+    if (mq135Raw < 150) {
+        airQualityStatus = "Sangat Bersih";
         isGasPolluted = false;
-    } else if (mq135Raw < 2500) {
-        airQualityStatus = "Sedang";
+    } else if (mq135Raw < 350) {
+        airQualityStatus = "Normal / Cukup Baik";
         isGasPolluted = false;
-    } else if (mq135Raw < 3400) {
-        airQualityStatus = "Tercemar Gas";
-        isGasPolluted = true;
+    } else if (mq135Raw <= 600) {
+        airQualityStatus = "Polusi Ringan";
+        isGasPolluted = false;
     } else {
-        airQualityStatus = "Sangat Tercemar";
+        airQualityStatus = "Tercemar";
         isGasPolluted = true;
     }
 }

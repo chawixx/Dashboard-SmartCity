@@ -270,13 +270,13 @@ Berdasarkan dokumen arahan [`CHANGE_THEME.md`](file:///home/narr/Projects/SmartC
 
 1. **Transformasi Nilai Mentah ke Indikator Intuitif Publik:**
    - Memenuhi kebutuhan pemahaman publik awam dengan menambahkan klasifikasi kualitas udara berbasis empiris sensor gas MQ-135 tanpa rekayasa fiktif PPM/AQI.
-   - Mengelompokkan resistansi analog 12-bit MQ-135 ke dalam status yang mudah dipahami:
-     - **$< 1500\text{ ADC}$** ($\approx < 1800\text{ mV}$ sensor): `"Udara Bersih"` (`is_gas_polluted: false`, badge hijau emerald, kondisi udara ruang terbuka segar tanpa akumulasi gas buang).
-     - **$1500 - 2500\text{ ADC}$** ($\approx 1800 - 3000\text{ mV}$ sensor): `"Sedang"` (`is_gas_polluted: false`, badge cyan, ambien perkotaan normal).
-     - **$2500 - 3400\text{ ADC}$** ($\approx 3000 - 4100\text{ mV}$ sensor): `"Tercemar Gas"` (`is_gas_polluted: true`, badge amber, terdeteksi emisi knalpot/asap rokok/pembakaran).
-     - **$\ge 3400\text{ ADC}$** ($\approx > 4100\text{ mV}$ sensor): `"Sangat Tercemar"` (`is_gas_polluted: true`, badge merah mawar, akumulasi gas/asap pekat berisiko).
+   - Mengelompokkan resistansi analog 12-bit MQ-135 ke dalam status spesifik:
+     - **$< 150\text{ ADC}$**: `"Sangat Bersih"` (`is_gas_polluted: false`, badge hijau emerald, kondisi udara ruang terbuka sangat segar dan bebas polusi).
+     - **$< 350\text{ ADC}$** ($150 - 349\text{ ADC}$): `"Normal / Cukup Baik"` (`is_gas_polluted: false`, badge cyan, ambien perkotaan normal dan sehat).
+     - **$< 600\text{ ADC}$** ($350 - 600\text{ ADC}$): `"Polusi Ringan"` (`is_gas_polluted: false`, badge amber, terdeteksi sedikit emisi gas buang atau asap tipis).
+     - **$> 600\text{ ADC}$**: `"Tercemar"` (`is_gas_polluted: true`, badge merah mawar, konsentrasi gas buang/asap tinggi melampaui ambang batas aman).
 2. **Implementasi Firmware ESP32-S3 (`SmartCIty-ESP32.ino`):**
-   - Menambahkan `String airQualityStatus = "Udara Bersih";` dan `bool isGasPolluted = false;`.
+   - Menambahkan `String airQualityStatus = "Normal / Cukup Baik";` dan `bool isGasPolluted = false;`.
    - Menghitung klasifikasi pada `readMQ135()` secara langsung di tepi jaringan (*edge computing*).
    - Memasukkan `"air_quality_status"` dan `"is_gas_polluted"` ke dalam payload telemetri MQTT JSON.
 3. **Pembaruan Kontrak Data, Formatters, & Parser:**
@@ -284,13 +284,13 @@ Berdasarkan dokumen arahan [`CHANGE_THEME.md`](file:///home/narr/Projects/SmartC
    - Membuat utilitas terpusat `getAirQualityGrade()` di `src/telemetry/formatters.ts` untuk menyediakan label, warna CSS token, teks badge, dan deskripsi penjelasan naratif.
    - Parser aman di `src/mqtt/parser.ts` membaca atribut kualitas udara baru dengan *backward-compatibility* penuh terhadap payload lama.
 4. **Desain Ulang Visual & Dashboard Observatorium:**
-   - **`GasCard.tsx`**: Ditransformasi dengan Hero Status Badge ("🌿 UDARA BERSIH" / "⚠️ TERCEMAR GAS"), ikon perisai/peringatan, dan narasi penjelasan ramah pengguna dengan tetap menampilkan spesifikasi ADC & voltase di bawahnya.
-   - **`TelemetryMatrixSection.tsx`**: Baris #03 menampilkan status intuitif seperti `Udara Bersih (1142 ADC · 1380 mV)` dengan aksen warna dinamis.
-   - **`HeroSection.tsx`**: Slide 3 menampilkan `Udara Bersih` sebagai headline metrik utama.
+   - **`GasCard.tsx`**: Ditransformasi dengan Hero Status Badge ("🌿 SANGAT BERSIH" / "NORMAL / BAIK" / "POLUSI RINGAN" / "⚠️ TERCEMAR GAS"), ikon perisai/peringatan, dan narasi penjelasan ramah pengguna dengan tetap menampilkan spesifikasi ADC & voltase di bawahnya.
+   - **`TelemetryMatrixSection.tsx`**: Baris #03 menampilkan status intuitif seperti `Sangat Bersih (120 ADC)` atau `Normal / Cukup Baik (240 ADC)` dengan format `<Arti Data> (<Nama Sensor>)`.
+   - **`HeroSection.tsx`**: Slide 3 menampilkan status kualitas udara sebagai headline metrik utama.
    - **`FacilitiesAnalyticsSection.tsx`**: Header gelombang gas menyajikan badge status kualitas udara real-time.
-   - **`ZoneTrustSection.tsx`**: HUD Zona 3 diperbarui menampilkan status buffer udara bersih vs tercemar gas.
-   - **`useAlertEngine.ts`**: Peringatan gas cerdas memicu notifikasi peringatan saat udara tercemar gas ($\ge 2600\text{ ADC}$) atau status bahaya ($\ge 3400\text{ ADC}$).
-   - **Pengujian & Kualitas**: Test suite meningkat menjadi **51 / 51 lulus (100%)** dan linter bersih tanpa error.
+   - **`ZoneTrustSection.tsx`**: HUD Zona 3 diperbarui menampilkan status buffer udara bersih vs tercemar.
+   - **`useAlertEngine.ts`**: Peringatan gas memicu notifikasi peringatan saat udara melampaui ambang batas `> 600 ADC` (`Tercemar`).
+   - **Pengujian & Kualitas**: Test suite **51 / 51 lulus (100%)** dan linter bersih tanpa error.
 
 ---
 

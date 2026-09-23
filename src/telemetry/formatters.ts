@@ -64,48 +64,52 @@ export function getAirQualityGrade(
 ): AirQualityGrade {
   if (explicitStatus) {
     switch (explicitStatus) {
+      case 'Sangat Bersih':
       case 'Udara Bersih':
         return {
-          status: 'Udara Bersih',
-          label: 'Udara Bersih',
-          badgeText: 'BERSIH & SEGAR',
+          status: 'Sangat Bersih',
+          label: 'Sangat Bersih',
+          badgeText: 'SANGAT BERSIH',
           color: 'var(--state-online)',
           bgColor: 'rgba(16, 185, 129, 0.12)',
           borderColor: 'rgba(16, 185, 129, 0.35)',
-          description: 'Kondisi udara ruang terbuka Alun-Alun bersih, tidak terdeteksi gas berbahaya.',
+          description: 'Kondisi udara ruang terbuka Alun-Alun sangat bersih, segar, dan bebas polusi.',
           isPolluted: false,
         };
+      case 'Normal / Cukup Baik':
       case 'Sedang':
         return {
-          status: 'Sedang',
-          label: 'Kualitas Sedang',
-          badgeText: 'NORMAL AMBIEN',
+          status: 'Normal / Cukup Baik',
+          label: 'Normal / Cukup Baik',
+          badgeText: 'NORMAL / BAIK',
           color: 'var(--brand-light)',
           bgColor: 'rgba(6, 182, 212, 0.12)',
           borderColor: 'rgba(6, 182, 212, 0.35)',
-          description: 'Kualitas udara wajar di kawasan perkotaan dengan aktivitas publik normal.',
+          description: 'Kualitas udara dalam batas wajar dan aman di kawasan publik.',
           isPolluted: false,
         };
-      case 'Tercemar Gas':
+      case 'Polusi Ringan':
         return {
-          status: 'Tercemar Gas',
-          label: 'Tercemar Gas',
-          badgeText: 'TERCEMAR GAS',
+          status: 'Polusi Ringan',
+          label: 'Polusi Ringan',
+          badgeText: 'POLUSI RINGAN',
           color: 'var(--state-stale)',
           bgColor: 'rgba(245, 158, 11, 0.15)',
           borderColor: 'rgba(245, 158, 11, 0.45)',
-          description: 'Terdeteksi akumulasi gas buang kendaraan atau asap di sekitar kawasan.',
-          isPolluted: true,
+          description: 'Terdeteksi peningkatan emisi gas buang atau asap tipis di sekitar kawasan.',
+          isPolluted: false,
         };
+      case 'Tercemar':
+      case 'Tercemar Gas':
       case 'Sangat Tercemar':
         return {
-          status: 'Sangat Tercemar',
-          label: 'Sangat Tercemar',
-          badgeText: 'BAHAYA GAS',
+          status: 'Tercemar',
+          label: 'Tercemar',
+          badgeText: 'TERCEMAR GAS',
           color: 'var(--state-offline)',
           bgColor: 'rgba(244, 63, 94, 0.15)',
           borderColor: 'rgba(244, 63, 94, 0.45)',
-          description: 'Konsentrasi gas atau asap pekat terdeteksi tinggi, potensi bahaya pernapasan.',
+          description: 'Konsentrasi gas buang atau asap terdeteksi tinggi melampaui batas aman (>600 ADC).',
           isPolluted: true,
         };
     }
@@ -114,7 +118,7 @@ export function getAirQualityGrade(
   // Fallback to evaluating raw ADC if explicitStatus is not present
   if (raw === null || raw === undefined) {
     return {
-      status: 'Udara Bersih',
+      status: 'Normal / Cukup Baik',
       label: 'Menunggu Data',
       badgeText: 'DATA TIDAK TERSEDIA',
       color: 'var(--text-muted)',
@@ -125,53 +129,58 @@ export function getAirQualityGrade(
     };
   }
 
-  if (raw < 1500) {
+  // User-defined Thresholds:
+  // Sangat Bersih < 150
+  // Normal / Cukup Baik < 350
+  // Polusi Ringan < 600 (<= 600)
+  // Tercemar > 600
+  if (raw < 150) {
     return {
-      status: 'Udara Bersih',
-      label: 'Udara Bersih',
-      badgeText: 'BERSIH & SEGAR',
+      status: 'Sangat Bersih',
+      label: 'Sangat Bersih',
+      badgeText: 'SANGAT BERSIH',
       color: 'var(--state-online)',
       bgColor: 'rgba(16, 185, 129, 0.12)',
       borderColor: 'rgba(16, 185, 129, 0.35)',
-      description: 'Kondisi udara ruang terbuka Alun-Alun bersih, tidak terdeteksi gas berbahaya.',
+      description: 'Kondisi udara ruang terbuka Alun-Alun sangat bersih, segar, dan bebas polusi.',
       isPolluted: false,
     };
   }
 
-  if (raw < 2500) {
+  if (raw < 350) {
     return {
-      status: 'Sedang',
-      label: 'Kualitas Sedang',
-      badgeText: 'NORMAL AMBIEN',
+      status: 'Normal / Cukup Baik',
+      label: 'Normal / Cukup Baik',
+      badgeText: 'NORMAL / BAIK',
       color: 'var(--brand-light)',
       bgColor: 'rgba(6, 182, 212, 0.12)',
       borderColor: 'rgba(6, 182, 212, 0.35)',
-      description: 'Kualitas udara wajar di kawasan perkotaan dengan aktivitas publik normal.',
+      description: 'Kualitas udara dalam batas wajar dan aman di kawasan publik.',
       isPolluted: false,
     };
   }
 
-  if (raw < 3400) {
+  if (raw <= 600) {
     return {
-      status: 'Tercemar Gas',
-      label: 'Tercemar Gas',
-      badgeText: 'TERCEMAR GAS',
+      status: 'Polusi Ringan',
+      label: 'Polusi Ringan',
+      badgeText: 'POLUSI RINGAN',
       color: 'var(--state-stale)',
       bgColor: 'rgba(245, 158, 11, 0.15)',
       borderColor: 'rgba(245, 158, 11, 0.45)',
-      description: 'Terdeteksi akumulasi gas buang kendaraan atau asap di sekitar kawasan.',
-      isPolluted: true,
+      description: 'Terdeteksi peningkatan emisi gas buang atau asap tipis di sekitar kawasan.',
+      isPolluted: false,
     };
   }
 
   return {
-    status: 'Sangat Tercemar',
-    label: 'Sangat Tercemar',
-    badgeText: 'BAHAYA GAS',
+    status: 'Tercemar',
+    label: 'Tercemar',
+    badgeText: 'TERCEMAR GAS',
     color: 'var(--state-offline)',
     bgColor: 'rgba(244, 63, 94, 0.15)',
     borderColor: 'rgba(244, 63, 94, 0.45)',
-    description: 'Konsentrasi gas atau asap pekat terdeteksi tinggi, potensi bahaya pernapasan.',
+    description: 'Konsentrasi gas buang atau asap terdeteksi tinggi melampaui batas aman (>600 ADC).',
     isPolluted: true,
   };
 }

@@ -5,7 +5,15 @@
 
 export type RainStatus = 'Kering' | 'Gerimis' | 'Hujan Sedang' | 'Hujan Lebat';
 export type FloodStatus = 'Aman' | 'Waspada' | 'Siaga' | 'Bahaya Banjir';
-export type AirQualityStatus = 'Udara Bersih' | 'Sedang' | 'Tercemar Gas' | 'Sangat Tercemar';
+export type AirQualityStatus =
+  | 'Sangat Bersih'
+  | 'Normal / Cukup Baik'
+  | 'Polusi Ringan'
+  | 'Tercemar'
+  | 'Udara Bersih'
+  | 'Sedang'
+  | 'Tercemar Gas'
+  | 'Sangat Tercemar';
 
 export interface TelemetryData {
   device_id: string;

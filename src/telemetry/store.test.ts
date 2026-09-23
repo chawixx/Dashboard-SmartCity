@@ -18,29 +18,29 @@ describe('Telemetry Formatters (PRD Section 12)', () => {
   });
 
   it('classifies air quality grades accurately for clean and polluted states', () => {
-    // Clean air (<1500 ADC)
-    const cleanGrade = getAirQualityGrade(1200);
-    expect(cleanGrade.status).toBe('Udara Bersih');
+    // Sangat Bersih (< 150 ADC)
+    const cleanGrade = getAirQualityGrade(120);
+    expect(cleanGrade.status).toBe('Sangat Bersih');
     expect(cleanGrade.isPolluted).toBe(false);
 
-    // Moderate / normal ambient (1500-2500 ADC)
-    const moderateGrade = getAirQualityGrade(1800);
-    expect(moderateGrade.status).toBe('Sedang');
+    // Normal / Cukup Baik (< 350 ADC)
+    const moderateGrade = getAirQualityGrade(250);
+    expect(moderateGrade.status).toBe('Normal / Cukup Baik');
     expect(moderateGrade.isPolluted).toBe(false);
 
-    // Polluted by gas (2500-3400 ADC)
-    const pollutedGrade = getAirQualityGrade(2900);
-    expect(pollutedGrade.status).toBe('Tercemar Gas');
+    // Polusi Ringan (<= 600 ADC)
+    const mildGrade = getAirQualityGrade(500);
+    expect(mildGrade.status).toBe('Polusi Ringan');
+    expect(mildGrade.isPolluted).toBe(false);
+
+    // Tercemar (> 600 ADC)
+    const pollutedGrade = getAirQualityGrade(750);
+    expect(pollutedGrade.status).toBe('Tercemar');
     expect(pollutedGrade.isPolluted).toBe(true);
 
-    // Severely polluted (>=3400 ADC)
-    const severeGrade = getAirQualityGrade(3800);
-    expect(severeGrade.status).toBe('Sangat Tercemar');
-    expect(severeGrade.isPolluted).toBe(true);
-
     // Explicit status override
-    const explicitGrade = getAirQualityGrade(1200, 'Tercemar Gas');
-    expect(explicitGrade.status).toBe('Tercemar Gas');
+    const explicitGrade = getAirQualityGrade(120, 'Tercemar');
+    expect(explicitGrade.status).toBe('Tercemar');
     expect(explicitGrade.isPolluted).toBe(true);
   });
 });
