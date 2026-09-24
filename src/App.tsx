@@ -174,7 +174,7 @@ export default function App() {
 
   // Simulation publisher helpers for verification & demonstration
   const handleSendNormalTelemetry = () => {
-    const mqVal = Math.floor(220 + (Math.random() * 80 - 40));
+    const mqVal = Math.floor(750 + (Math.random() * 200 - 100));
     const payload = JSON.stringify({
       device_id: simDeviceId,
       sequence: packetCount + 1,
@@ -183,9 +183,9 @@ export default function App() {
       temperature_c: +(28.5 + (Math.random() * 3 - 1.5)).toFixed(2),
       humidity_percent: +(68 + (Math.random() * 6 - 3)).toFixed(2),
       mq135_raw: mqVal,
-      mq135_adc_mv: +(180 + (Math.random() * 40 - 20)).toFixed(1),
-      mq135_sensor_mv: +(300 + (Math.random() * 60 - 30)).toFixed(1),
-      air_quality_status: mqVal < 150 ? 'Sangat Bersih' : 'Normal / Cukup Baik',
+      mq135_adc_mv: +(580 + (Math.random() * 40 - 20)).toFixed(1),
+      mq135_sensor_mv: +(966 + (Math.random() * 60 - 30)).toFixed(1),
+      air_quality_status: mqVal < 350 ? 'Sangat Bersih' : 'Normal / Cukup Baik',
       is_gas_polluted: false,
       rain_raw: 3850,
       rain_status: 'Kering',
@@ -212,7 +212,7 @@ export default function App() {
       const floodH = +(30.0 - dist).toFixed(1);
       const isFlood = dist <= 12.0;
       const isPollutedSample = i % 5 === 4;
-      const mqSample = isPollutedSample ? 720 : Math.floor(120 + (i % 4) * 80);
+      const mqSample = isPollutedSample ? 3400 : Math.floor(500 + (i % 4) * 300);
       const payload = JSON.stringify({
         device_id: simDeviceId,
         sequence: currentSeq,
@@ -221,9 +221,9 @@ export default function App() {
         temperature_c: +(28.0 + Math.sin(i / 2) * 2.2).toFixed(2),
         humidity_percent: +(70.0 + Math.cos(i / 2) * 4.5).toFixed(2),
         mq135_raw: mqSample,
-        mq135_adc_mv: +(180 + Math.sin(i) * 50).toFixed(1),
-        mq135_sensor_mv: +(300 + Math.sin(i) * 80).toFixed(1),
-        air_quality_status: isPollutedSample ? 'Tercemar' : mqSample < 150 ? 'Sangat Bersih' : 'Normal / Cukup Baik',
+        mq135_adc_mv: +(isPollutedSample ? 2600 : 450 + Math.sin(i) * 80).toFixed(1),
+        mq135_sensor_mv: +(isPollutedSample ? 4333.3 : 750 + Math.sin(i) * 120).toFixed(1),
+        air_quality_status: isPollutedSample ? 'Tercemar' : mqSample < 350 ? 'Sangat Bersih' : mqSample < 1500 ? 'Normal / Cukup Baik' : 'Polusi Ringan',
         is_gas_polluted: isPollutedSample,
         rain_raw: isWet ? 2200 : 3900,
         rain_status: isWet ? 'Hujan Sedang' : 'Kering',
@@ -256,9 +256,9 @@ export default function App() {
       uptime_s: telemetry?.uptime_s || 380,
       temperature_c: +(28.2).toFixed(2),
       humidity_percent: +(66.5).toFixed(2),
-      mq135_raw: 240,
-      mq135_adc_mv: 200.0,
-      mq135_sensor_mv: 330.0,
+      mq135_raw: 750,
+      mq135_adc_mv: 580.0,
+      mq135_sensor_mv: 966.7,
       air_quality_status: 'Normal / Cukup Baik',
       is_gas_polluted: false,
       rain_raw: 3850,
@@ -282,9 +282,9 @@ export default function App() {
       uptime_s: (telemetry?.uptime_s || 380) + 10,
       temperature_c: +(27.8).toFixed(2),
       humidity_percent: +(69.0).toFixed(2),
-      mq135_raw: 240,
-      mq135_adc_mv: 200.0,
-      mq135_sensor_mv: 330.0,
+      mq135_raw: 750,
+      mq135_adc_mv: 580.0,
+      mq135_sensor_mv: 966.7,
       air_quality_status: 'Normal / Cukup Baik',
       is_gas_polluted: false,
       rain_raw: 3850,

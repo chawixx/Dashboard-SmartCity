@@ -18,28 +18,28 @@ describe('Telemetry Formatters (PRD Section 12)', () => {
   });
 
   it('classifies air quality grades accurately for clean and polluted states', () => {
-    // Sangat Bersih (< 150 ADC)
-    const cleanGrade = getAirQualityGrade(120);
+    // Sangat Bersih (< 350 ADC)
+    const cleanGrade = getAirQualityGrade(250);
     expect(cleanGrade.status).toBe('Sangat Bersih');
     expect(cleanGrade.isPolluted).toBe(false);
 
-    // Normal / Cukup Baik (< 350 ADC)
-    const moderateGrade = getAirQualityGrade(250);
+    // Normal / Cukup Baik (< 1500 ADC)
+    const moderateGrade = getAirQualityGrade(800);
     expect(moderateGrade.status).toBe('Normal / Cukup Baik');
     expect(moderateGrade.isPolluted).toBe(false);
 
-    // Polusi Ringan (<= 600 ADC)
-    const mildGrade = getAirQualityGrade(500);
+    // Polusi Ringan (<= 3000 ADC)
+    const mildGrade = getAirQualityGrade(2200);
     expect(mildGrade.status).toBe('Polusi Ringan');
     expect(mildGrade.isPolluted).toBe(false);
 
-    // Tercemar (> 600 ADC)
-    const pollutedGrade = getAirQualityGrade(750);
+    // Tercemar (> 3000 ADC)
+    const pollutedGrade = getAirQualityGrade(3500);
     expect(pollutedGrade.status).toBe('Tercemar');
     expect(pollutedGrade.isPolluted).toBe(true);
 
     // Explicit status override
-    const explicitGrade = getAirQualityGrade(120, 'Tercemar');
+    const explicitGrade = getAirQualityGrade(250, 'Tercemar');
     expect(explicitGrade.status).toBe('Tercemar');
     expect(explicitGrade.isPolluted).toBe(true);
   });

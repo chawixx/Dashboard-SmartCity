@@ -370,17 +370,17 @@ void readMQ135() {
          MQ135_R2);
 
     // Human-readable Air Quality & Gas Pollution Classification
-    // Sangat Bersih: < 150
-    // Normal / Cukup Baik: < 350
-    // Polusi Ringan: < 600 (<= 600)
-    // Tercemar: > 600
-    if (mq135Raw < 150) {
+    // Sangat Bersih: < 350
+    // Normal / Cukup Baik: < 1500
+    // Polusi Ringan: < 3000 (<= 3000)
+    // Tercemar: > 3000
+    if (mq135Raw < 350) {
         airQualityStatus = "Sangat Bersih";
         isGasPolluted = false;
-    } else if (mq135Raw < 350) {
+    } else if (mq135Raw < 1500) {
         airQualityStatus = "Normal / Cukup Baik";
         isGasPolluted = false;
-    } else if (mq135Raw <= 600) {
+    } else if (mq135Raw <= 3000) {
         airQualityStatus = "Polusi Ringan";
         isGasPolluted = false;
     } else {

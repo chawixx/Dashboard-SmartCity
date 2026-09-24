@@ -109,7 +109,7 @@ export function getAirQualityGrade(
           color: 'var(--state-offline)',
           bgColor: 'rgba(244, 63, 94, 0.15)',
           borderColor: 'rgba(244, 63, 94, 0.45)',
-          description: 'Konsentrasi gas buang atau asap terdeteksi tinggi melampaui batas aman (>600 ADC).',
+          description: 'Konsentrasi gas buang atau asap terdeteksi tinggi melampaui batas aman (>3000 ADC).',
           isPolluted: true,
         };
     }
@@ -130,11 +130,11 @@ export function getAirQualityGrade(
   }
 
   // User-defined Thresholds:
-  // Sangat Bersih < 150
-  // Normal / Cukup Baik < 350
-  // Polusi Ringan < 600 (<= 600)
-  // Tercemar > 600
-  if (raw < 150) {
+  // Sangat Bersih < 350
+  // Normal / Cukup Baik < 1500
+  // Polusi Ringan <= 3000
+  // Tercemar > 3000
+  if (raw < 350) {
     return {
       status: 'Sangat Bersih',
       label: 'Sangat Bersih',
@@ -142,12 +142,12 @@ export function getAirQualityGrade(
       color: 'var(--state-online)',
       bgColor: 'rgba(16, 185, 129, 0.12)',
       borderColor: 'rgba(16, 185, 129, 0.35)',
-      description: 'Kondisi udara ruang terbuka Alun-Alun sangat bersih, segar, dan bebas polusi.',
+      description: 'Kondisi udara ruang terbuka Alun-Alun sangat bersih, segar, dan bebas polusi (<350 ADC).',
       isPolluted: false,
     };
   }
 
-  if (raw < 350) {
+  if (raw < 1500) {
     return {
       status: 'Normal / Cukup Baik',
       label: 'Normal / Cukup Baik',
@@ -155,12 +155,12 @@ export function getAirQualityGrade(
       color: 'var(--brand-light)',
       bgColor: 'rgba(6, 182, 212, 0.12)',
       borderColor: 'rgba(6, 182, 212, 0.35)',
-      description: 'Kualitas udara dalam batas wajar dan aman di kawasan publik.',
+      description: 'Kualitas udara dalam batas wajar dan aman di kawasan publik (<1500 ADC).',
       isPolluted: false,
     };
   }
 
-  if (raw <= 600) {
+  if (raw <= 3000) {
     return {
       status: 'Polusi Ringan',
       label: 'Polusi Ringan',
@@ -168,7 +168,7 @@ export function getAirQualityGrade(
       color: 'var(--state-stale)',
       bgColor: 'rgba(245, 158, 11, 0.15)',
       borderColor: 'rgba(245, 158, 11, 0.45)',
-      description: 'Terdeteksi peningkatan emisi gas buang atau asap tipis di sekitar kawasan.',
+      description: 'Terdeteksi peningkatan emisi gas buang atau asap tipis di sekitar kawasan (<3000 ADC).',
       isPolluted: false,
     };
   }
@@ -180,7 +180,7 @@ export function getAirQualityGrade(
     color: 'var(--state-offline)',
     bgColor: 'rgba(244, 63, 94, 0.15)',
     borderColor: 'rgba(244, 63, 94, 0.45)',
-    description: 'Konsentrasi gas buang atau asap terdeteksi tinggi melampaui batas aman (>600 ADC).',
+    description: 'Konsentrasi gas buang atau asap terdeteksi tinggi melampaui batas aman (>3000 ADC).',
     isPolluted: true,
   };
 }

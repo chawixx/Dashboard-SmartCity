@@ -86,9 +86,9 @@ aethersense/{device_id}/telemetry
   "uptime_s": 381,
   "temperature_c": 28.43,
   "humidity_percent": 71.20,
-  "mq135_raw": 240,
-  "mq135_adc_mv": 195,
-  "mq135_sensor_mv": 325.0,
+  "mq135_raw": 780,
+  "mq135_adc_mv": 605,
+  "mq135_sensor_mv": 1008.3,
   "air_quality_status": "Normal / Cukup Baik",
   "is_gas_polluted": false,
   "rain_raw": 3950,
@@ -115,8 +115,8 @@ aethersense/{device_id}/telemetry
 | `mq135_raw` | `number` | ADC count | $0 \dots 4095$ | Raw 12-bit analog reading from ESP32 ADC1. |
 | `mq135_adc_mv` | `number` | mV | $0 \dots 3300$ | Calibrated voltage at ESP32 input pin. |
 | `mq135_sensor_mv`| `number` | mV | $0 \dots 5000$ | Inferred voltage at MQ-135 sensor output. |
-| `air_quality_status`| `string` (opt)| — | `Sangat Bersih` (<150), `Normal / Cukup Baik` (<350), `Polusi Ringan` (<600), `Tercemar` (>600) | Human-readable gas air quality classification. |
-| `is_gas_polluted`| `boolean` (opt)| — | `true` / `false` | Hazardous gas / smoke contamination flag (>600 ADC). |
+| `air_quality_status`| `string` (opt)| — | `Sangat Bersih` (<350), `Normal / Cukup Baik` (<1500), `Polusi Ringan` (<3000), `Tercemar` (>3000) | Human-readable gas air quality classification. |
+| `is_gas_polluted`| `boolean` (opt)| — | `true` / `false` | Hazardous gas / smoke contamination flag (>3000 ADC). |
 | `rain_raw` | `number` (opt)| ADC count | $0 \dots 4095$ | Raw 12-bit analog reading from Rain Sensor (Pin 8, lower = wetter). |
 | `rain_status` | `string` (opt)| — | `Kering`, `Gerimis`, `Hujan Sedang`, `Hujan Lebat` | Human-readable precipitation classification. |
 | `is_raining` | `boolean` (opt)| — | `true` / `false` | Precipitation presence flag based on threshold. |

@@ -68,11 +68,11 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
     expect(violations['humid_high'].title).toBe('Kelembaban Sangat Tinggi');
   });
 
-  it('detects high gas concentration / smoke on MQ135 > 600 ADC', () => {
+  it('detects high gas concentration / smoke on MQ135 > 3000 ADC', () => {
     const highGasTelemetry: TelemetryData = {
       ...normalTelemetry,
-      mq135_raw: 750,
-      mq135_sensor_mv: 1200,
+      mq135_raw: 3400,
+      mq135_sensor_mv: 4200,
     };
 
     const violations = evaluateTelemetryViolations(highGasTelemetry, false);
@@ -84,8 +84,8 @@ describe('useAlertEngine Threshold & Hazard Rules', () => {
   it('detects gas pollution alert when is_gas_polluted or air_quality_status is Tercemar', () => {
     const pollutedTelemetry: TelemetryData = {
       ...normalTelemetry,
-      mq135_raw: 700,
-      mq135_sensor_mv: 1100,
+      mq135_raw: 3200,
+      mq135_sensor_mv: 4000,
       air_quality_status: 'Tercemar',
       is_gas_polluted: true,
     };
