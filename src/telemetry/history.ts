@@ -3,7 +3,7 @@
  * Strictly adheres to PRD Section 15, 16, 28, and ARCHITECTURE.md Section 4
  */
 
-import { type TelemetryData } from './types';
+import { type TelemetryData, type RelayStates } from './types';
 
 export interface TelemetryHistoryPoint {
   timestamp: number;
@@ -21,6 +21,11 @@ export interface TelemetryHistoryPoint {
   water_distance_cm?: number;
   flood_status?: string;
   is_flood_warning?: boolean;
+  relays?: RelayStates;
+  relay1?: boolean;
+  relay2?: boolean;
+  relay3?: boolean;
+  relay4?: boolean;
   formattedTime: string;
 }
 
@@ -136,6 +141,11 @@ export function createHistoryPoint(telemetry: TelemetryData): TelemetryHistoryPo
     water_distance_cm: telemetry.water_distance_cm,
     flood_status: telemetry.flood_status,
     is_flood_warning: telemetry.is_flood_warning,
+    relays: telemetry.relays,
+    relay1: telemetry.relay1,
+    relay2: telemetry.relay2,
+    relay3: telemetry.relay3,
+    relay4: telemetry.relay4,
     formattedTime,
   };
 }

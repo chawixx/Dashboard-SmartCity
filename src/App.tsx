@@ -4,7 +4,8 @@ import 'lenis/dist/lenis.css';
 import { useMqtt } from './hooks/useMqtt';
 import { useTelemetry } from './hooks/useTelemetry';
 import { mqttConfig } from './mqtt/config';
-import { extractDeviceIdFromTopic, getTelemetryTopic, getStatusTopic } from './mqtt/topics';
+import { extractDeviceIdFromTopic, getTelemetryTopic, getStatusTopic, getCommandTopic } from './mqtt/topics';
+import { type RelayStates } from './telemetry/types';
 
 // Editorial Components (PRD v2.0 - Tegal EcoSense Observatory)
 import { IntroLoader } from './components/editorial/IntroLoader';
@@ -12,6 +13,7 @@ import { SiteHeader } from './components/editorial/SiteHeader';
 import { HeroSection } from './components/editorial/HeroSection';
 import { ZoneTrustSection } from './components/editorial/ZoneTrustSection';
 import { TelemetryMatrixSection } from './components/editorial/TelemetryMatrixSection';
+import { SectorLightingControlSection } from './components/editorial/SectorLightingControlSection';
 import { FacilitiesAnalyticsSection } from './components/editorial/FacilitiesAnalyticsSection';
 import { StatsSection } from './components/editorial/StatsSection';
 import { FieldLogsSection } from './components/editorial/FieldLogsSection';
@@ -171,6 +173,72 @@ export default function App() {
     (selectedDeviceId !== 'auto' ? selectedDeviceId : 'esp32s3-E8A851858428');
   const simTelemetryTopic = getTelemetryTopic(simDeviceId);
   const simStatusTopic = getStatusTopic(simDeviceId);
+  const simCommandTopic = getCommandTopic(simDeviceId);
+
+  // Relay 4-Channel local state & hardware sync
+  const [relayStates, setRelayStates] = useState<RelayStates>({
+    relay1: false,
+    relay2: false,
+    relay3: false,
+    relay4: false,
+  });
+
+  // Sync relay states when fresh telemetry arrives from ESP32
+  useEffect(() => {
+    if (telemetry) {
+      if (telemetry.relays) {
+        const nextRelays = telemetry.relays;
+        queueMicrotask(() => {
+          setRelayStates(nextRelays);
+        });
+      } else if (telemetry.relay1 !== undefined) {
+        const nextRelays: RelayStates = {
+          relay1: !!telemetry.relay1,
+          relay2: !!telemetry.relay2,
+          relay3: !!telemetry.relay3,
+          relay4: !!telemetry.relay4,
+        };
+        queueMicrotask(() => {
+          setRelayStates(nextRelays);
+        });
+      }
+    }
+  }, [telemetry]);
+
+  const handleToggleRelay = (relayId: 1 | 2 | 3 | 4, nextState: boolean) => {
+    // 1. Optimistic UI update
+    setRelayStates((prev) => ({
+      ...prev,
+      [`relay${relayId}`]: nextState,
+    }));
+
+    // 2. Transmit MQTT Command to ESP32-S3
+    const payload = JSON.stringify({
+      type: 'relay',
+      relay: relayId,
+      sector: relayId,
+      state: nextState,
+      timestamp: Math.floor(Date.now() / 1000),
+    });
+    publish(simCommandTopic, payload);
+  };
+
+  const handleToggleAllRelays = (nextState: boolean) => {
+    setRelayStates({
+      relay1: nextState,
+      relay2: nextState,
+      relay3: nextState,
+      relay4: nextState,
+    });
+
+    const payload = JSON.stringify({
+      type: 'relay_all',
+      relay: 'all',
+      state: nextState,
+      timestamp: Math.floor(Date.now() / 1000),
+    });
+    publish(simCommandTopic, payload);
+  };
 
   // Simulation publisher helpers for verification & demonstration
   const handleSendNormalTelemetry = () => {
@@ -195,6 +263,11 @@ export default function App() {
       flood_status: 'Aman',
       is_flood_warning: false,
       wifi_rssi_dbm: Math.floor(-56 + (Math.random() * 10 - 5)),
+      relays: relayStates,
+      relay1: relayStates.relay1,
+      relay2: relayStates.relay2,
+      relay3: relayStates.relay3,
+      relay4: relayStates.relay4,
     });
     publish(simTelemetryTopic, payload);
   };
@@ -233,6 +306,11 @@ export default function App() {
         flood_status: dist <= 6.0 ? 'Bahaya Banjir' : dist <= 12.0 ? 'Siaga' : dist <= 20.0 ? 'Waspada' : 'Aman',
         is_flood_warning: isFlood,
         wifi_rssi_dbm: Math.floor(-54 - (i % 3) * 2),
+        relays: relayStates,
+        relay1: relayStates.relay1,
+        relay2: relayStates.relay2,
+        relay3: relayStates.relay3,
+        relay4: relayStates.relay4,
       });
       publish(simTelemetryTopic, payload);
     }
@@ -342,7 +420,17 @@ export default function App() {
           onSelectParam={handleScrollToParam}
         />
 
-        {/* Section 03: Microclimate Facilities & SVG Waveform Analytics */}
+        {/* Section 03: 4-Channel Relay & Sector Lighting Monitoring and Control */}
+        <SectorLightingControlSection
+          telemetry={telemetry}
+          relayStates={relayStates}
+          onToggleRelay={handleToggleRelay}
+          onToggleAllRelays={handleToggleAllRelays}
+          targetDeviceId={activeDeviceId}
+          isMqttConnected={connectionState === 'CONNECTED'}
+        />
+
+        {/* Section 04: Microclimate Facilities & SVG Waveform Analytics */}
         <FacilitiesAnalyticsSection
           history={history}
           telemetry={telemetry}

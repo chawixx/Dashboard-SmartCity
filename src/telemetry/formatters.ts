@@ -3,7 +3,7 @@
  * Strictly adheres to PRD Section 12, 14, 23, and DESIGN.md
  */
 
-import { type AirQualityStatus } from './types';
+import { type AirQualityStatus, type RelayStates, type TelemetryData } from './types';
 
 /**
  * Formats seconds into HH:MM:SS string.
@@ -182,5 +182,130 @@ export function getAirQualityGrade(
     borderColor: 'rgba(244, 63, 94, 0.45)',
     description: 'Konsentrasi gas buang atau asap terdeteksi tinggi melampaui batas aman (>3000 ADC).',
     isPolluted: true,
+  };
+}
+
+export interface SectorLightingConfig {
+  id: 1 | 2 | 3 | 4;
+  key: keyof RelayStates;
+  pinName: string;
+  gpio: number;
+  name: string;
+  sectorTag: string;
+  areaName: string;
+  description: string;
+  lightingType: string;
+  fixtureCount: number;
+  unitWattage: number; // Watt
+  color: string;
+  accentGlow: string;
+}
+
+export const SECTOR_LIGHTING_CONFIGS: SectorLightingConfig[] = [
+  {
+    id: 1,
+    key: 'relay1',
+    pinName: 'IN1',
+    gpio: 38,
+    name: 'Sektor 01 — Kawasan Alun-Alun & Monumen Bahari',
+    sectorTag: 'SEKTOR 01 / CENTRALE',
+    areaName: 'Plaza Sentral & Monumen Bahari',
+    description: 'Penerangan pedestrian taman utama, lingkar air mancur, dan ornamen tiang maritim Alun-Alun Tegal.',
+    lightingType: 'Smart Pole LED 4000K & Ornamen Maritim',
+    fixtureCount: 16,
+    unitWattage: 45,
+    color: '#38bdf8', // Sky Cyan
+    accentGlow: 'rgba(56, 189, 248, 0.45)',
+  },
+  {
+    id: 2,
+    key: 'relay2',
+    pinName: 'IN2',
+    gpio: 39,
+    name: 'Sektor 02 — Koridor Jl. KH Wahid Hasyim',
+    sectorTag: 'SEKTOR 02 / KOMERSIAL',
+    areaName: 'Koridor Bisnis & Sentra Kuliner Barat',
+    description: 'Penerangan jalan umum (PJU) trotoar komersial, pertokoan barat, dan area parkir kuliner malam.',
+    lightingType: 'PJU High-Lumen 5000K & Trotoar Publik',
+    fixtureCount: 22,
+    unitWattage: 60,
+    color: '#0ea5e9', // Royal Blue
+    accentGlow: 'rgba(14, 165, 233, 0.45)',
+  },
+  {
+    id: 3,
+    key: 'relay3',
+    pinName: 'IN3',
+    gpio: 40,
+    name: 'Sektor 03 — RTH & Jalur Sepeda Bahari',
+    sectorTag: 'SEKTOR 03 / VEGETASI',
+    areaName: 'Taman Edukasi & Track Sepeda Selatan',
+    description: 'Tata cahaya hemat energi sepanjang vegetasi peneduh, area rumput terbuka, dan jalur pesepeda.',
+    lightingType: 'Bollard Eco-LED 3000K Warm Ambient',
+    fixtureCount: 18,
+    unitWattage: 35,
+    color: '#10b981', // Emerald Teal
+    accentGlow: 'rgba(16, 185, 129, 0.45)',
+  },
+  {
+    id: 4,
+    key: 'relay4',
+    pinName: 'IN4',
+    gpio: 41,
+    name: 'Sektor 04 — Saluran Drainase & Tanggul Pesisir',
+    sectorTag: 'SEKTOR 04 / VITAL INFRA',
+    areaName: 'Stasiun Pompa & Pintu Air Muara',
+    description: 'Pencahayaan sorot operasional pemantauan elevasi banjir (ultrasonik) dan inspeksi dinding tanggul.',
+    lightingType: 'Floodlight Sorot Inspeksi Tanggul 5700K',
+    fixtureCount: 8,
+    unitWattage: 70,
+    color: '#f59e0b', // Amber Alert
+    accentGlow: 'rgba(245, 158, 11, 0.45)',
+  },
+];
+
+/**
+ * Extracts the boolean state of a sector from telemetry or fallback state
+ */
+export function getSectorRelayState(
+  telemetry: TelemetryData | null | undefined,
+  sectorId: 1 | 2 | 3 | 4,
+  fallbackStates?: RelayStates
+): boolean {
+  const key = `relay${sectorId}` as keyof RelayStates;
+  if (telemetry?.relays && typeof telemetry.relays[key] === 'boolean') {
+    return telemetry.relays[key];
+  }
+  if (telemetry && typeof telemetry[key] === 'boolean') {
+    return !!telemetry[key];
+  }
+  if (fallbackStates && typeof fallbackStates[key] === 'boolean') {
+    return fallbackStates[key];
+  }
+  return false;
+}
+
+/**
+ * Calculates total power and active sector count
+ */
+export function calculateLightingStats(states: RelayStates) {
+  let activeCount = 0;
+  let totalWatt = 0;
+  let totalFixtures = 0;
+
+  SECTOR_LIGHTING_CONFIGS.forEach((sec) => {
+    if (states[sec.key]) {
+      activeCount++;
+      totalWatt += sec.unitWattage;
+      totalFixtures += sec.fixtureCount;
+    }
+  });
+
+  return {
+    activeCount,
+    totalCount: SECTOR_LIGHTING_CONFIGS.length,
+    totalWatt,
+    totalFixtures,
+    powerKwhEquivalent: +(totalWatt / 1000).toFixed(2),
   };
 }

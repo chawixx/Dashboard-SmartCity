@@ -136,3 +136,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integrated high-resolution `.jpeg` photographs in `public/assets/tegal/` with companion `.webp` files and robust fallback chain (`.jpeg` ➔ `.webp` ➔ `.jpg` ➔ `.png` ➔ `.svg`).
   - Created comprehensive project vault in `PROJECT_VAULT.md`.
 
+---
+
+## [0.3.0] - 2026-09-28
+
+### Added
+- **4-Channel Relay Actuator & Smart City Municipal Lighting Control:**
+  - Integrated 4-channel relay actuator system on ESP32-S3 controlling 4 distinct municipal lighting sectors:
+    - **IN1 -> GPIO 38:** Sektor 01 — Kawasan Alun-Alun & Monumen Bahari (Smart Pole Pedestrian & Air Mancur Sentral)
+    - **IN2 -> GPIO 39:** Sektor 02 — Koridor Jl. KH Wahid Hasyim (PJU Jalan Umum & Sentra Kuliner Barat)
+    - **IN3 -> GPIO 40:** Sektor 03 — RTH & Jalur Sepeda Bahari (Eco-Lighting Bollard Vegetasi Pesisir)
+    - **IN4 -> GPIO 41:** Sektor 04 — Saluran Drainase & Tanggul Pesisir (Floodlight Sorot Inspeksi Pintu Air)
+  - Designed and implemented interactive `SectorLightingControlSection.tsx`:
+    - Visual glowing LED orb indicators for each sector with neon bloom animation on active state and metallic lens on inactive state.
+    - Tactile individual ON/OFF toggle switch button for each sector.
+    - Master control bar with "Nyalakan Semua" (All ON) and "Matikan Semua" (All OFF) actions.
+    - Real-time power consumption metrics (Watt) and fixture counter.
+    - Optimistic UI updates with instant local feedback and synchronization with incoming hardware telemetry.
+  - Implemented MQTT command protocol in `src/mqtt/topics.ts` (`getCommandTopic`, `isCommandTopic`) on `aethersense/{device_id}/command`.
+  - Added non-throwing, resilient relay telemetry parsing in `src/mqtt/parser.ts` (supporting both nested `{ relay1..4 }` and flat `relay1..4` schemas).
+  - Preserved timeseries ring-buffer compatibility in `src/telemetry/history.ts`.
+  - Documented complete protocol, pinouts, and JSON payloads in `MQTT-CONTRACT.md` (Section 3.1, 4.3, 4.4, 7).
+
+### Changed
+- **Relay Inversion & Hardware Booting Fix:**
+  - Inverted relay logic level to `RELAY_ACTIVE_LEVEL = HIGH` and `RELAY_INACTIVE_LEVEL = LOW` in `SmartCIty-ESP32.ino`.
+  - Pins are initialized to `LOW` on boot, ensuring all LEDs remain cleanly **OFF (Padam)** during microcontroller startup.
+  - Aligned switch states: "Nyalakan Sektor" sends `HIGH` (turns physical LED ON), "Matikan Sektor" sends `LOW` (turns physical LED OFF).
+- **Streamlined UI & Notification Experience:**
+  - Removed "Mode Eco" button and references from the master control panel.
+  - Removed action feedback notification banner to provide a clean, silent, and seamless tactile control experience.
+  - Added "Penerangan" navigation links in `SiteHeader.tsx` and `DropletMenuDropdown.tsx` pointing directly to `#lighting-control`.
+
+

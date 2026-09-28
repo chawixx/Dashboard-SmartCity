@@ -73,6 +73,18 @@ export function SiteHeader({
           Parameter
         </a>
         <a
+          href="#lighting-control"
+          style={{
+            color: 'rgba(255, 255, 255, 0.85)',
+            textDecoration: 'none',
+            transition: 'color 0.2s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#ffffff')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255, 255, 255, 0.85)')}
+        >
+          Penerangan
+        </a>
+        <a
           href="#analytics"
           style={{
             color: 'rgba(255, 255, 255, 0.85)',

@@ -8,6 +8,7 @@ import {
   Layers,
   Radio,
   Sparkles,
+  Lightbulb,
 } from 'lucide-react';
 
 interface DropletMenuDropdownProps {
@@ -78,6 +79,14 @@ export function DropletMenuDropdown({
     },
     {
       num: '02',
+      label: 'Penerangan & Relay Sektor',
+      desc: 'Kendali ON/OFF 4 channel relay GPIO 38, 39, 40, 41',
+      href: '#lighting-control',
+      tag: 'Actuator',
+      icon: <Lightbulb size={16} style={{ color: '#fbbf24' }} />,
+    },
+    {
+      num: '03',
       label: 'Analisis Mikroklimat',
       desc: 'Grafik tren suhu, kelembapan & korelasi pesisir',
       href: '#analytics',

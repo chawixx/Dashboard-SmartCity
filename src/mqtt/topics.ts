@@ -72,3 +72,31 @@ export function isStatusTopic(topic: string, specificDeviceId?: string): boolean
   const parts = topic.split('/');
   return parts.length === 3 && parts[0] === MQTT_ROOT && parts[2] === 'status';
 }
+
+/**
+ * Builds the actuator / command topic for a specific device.
+ * Format: aethersense/{device_id}/command
+ */
+export function getCommandTopic(deviceId: string): string {
+  const sanitizedId = deviceId.trim();
+  return `${MQTT_ROOT}/${sanitizedId}/command`;
+}
+
+/**
+ * Builds the wildcard command discovery / broadcast topic.
+ * Format: aethersense/+/command
+ */
+export function getCommandDiscoveryTopic(): string {
+  return `${MQTT_ROOT}/+/command`;
+}
+
+/**
+ * Checks if a given topic matches device command / actuator pattern.
+ */
+export function isCommandTopic(topic: string, specificDeviceId?: string): boolean {
+  if (specificDeviceId && specificDeviceId !== 'auto') {
+    return topic === getCommandTopic(specificDeviceId);
+  }
+  const parts = topic.split('/');
+  return parts.length === 3 && parts[0] === MQTT_ROOT && parts[2] === 'command';
+}

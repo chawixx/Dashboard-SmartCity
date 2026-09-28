@@ -3,9 +3,11 @@ import { parseTelemetryPayload, parseDeviceStatus } from './parser';
 import {
   getTelemetryTopic,
   getStatusTopic,
+  getCommandTopic,
   extractDeviceIdFromTopic,
   isTelemetryTopic,
   isStatusTopic,
+  isCommandTopic,
 } from './topics';
 
 describe('Telemetry Parser (PRD Section 7, 8, 17)', () => {
@@ -347,5 +349,78 @@ describe('MQTT Topic Utilities (PRD Section 5)', () => {
     const statusTopic = 'aethersense/esp32s3-ABCD12345678/status';
     expect(isStatusTopic(statusTopic)).toBe(true);
     expect(isTelemetryTopic(statusTopic)).toBe(false);
+
+    const cmdTopic = 'aethersense/esp32s3-ABCD12345678/command';
+    expect(getCommandTopic('esp32s3-ABCD12345678')).toBe(cmdTopic);
+    expect(isCommandTopic(cmdTopic)).toBe(true);
+    expect(isTelemetryTopic(cmdTopic)).toBe(false);
+    expect(isStatusTopic(cmdTopic)).toBe(false);
   });
 });
+
+describe('Relay & Actuator Telemetry Parser (IN1=38, IN2=39, IN3=40, IN4=41)', () => {
+  it('parses nested relays object correctly', () => {
+    const payload = JSON.stringify({
+      device_id: 'esp32s3-TEST',
+      sequence: 1,
+      timestamp: 1790000000,
+      uptime_s: 10,
+      temperature_c: 28.0,
+      humidity_percent: 65.0,
+      mq135_raw: 500,
+      mq135_adc_mv: 400,
+      mq135_sensor_mv: 666.6,
+      wifi_rssi_dbm: -60,
+      relays: {
+        relay1: true,
+        relay2: false,
+        relay3: true,
+        relay4: false,
+      },
+    });
+
+    const result = parseTelemetryPayload(payload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.relays).toBeDefined();
+      expect(result.data.relays?.relay1).toBe(true);
+      expect(result.data.relays?.relay2).toBe(false);
+      expect(result.data.relays?.relay3).toBe(true);
+      expect(result.data.relays?.relay4).toBe(false);
+      expect(result.data.relay1).toBe(true);
+      expect(result.data.relay2).toBe(false);
+      expect(result.data.relay3).toBe(true);
+      expect(result.data.relay4).toBe(false);
+    }
+  });
+
+  it('parses flat relay flags correctly', () => {
+    const payload = JSON.stringify({
+      device_id: 'esp32s3-TEST',
+      sequence: 2,
+      timestamp: 1790000005,
+      uptime_s: 15,
+      temperature_c: 28.1,
+      humidity_percent: 65.2,
+      mq135_raw: 520,
+      mq135_adc_mv: 410,
+      mq135_sensor_mv: 683.3,
+      wifi_rssi_dbm: -58,
+      relay1: false,
+      relay2: true,
+      relay3: false,
+      relay4: true,
+    });
+
+    const result = parseTelemetryPayload(payload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.relays?.relay1).toBe(false);
+      expect(result.data.relays?.relay2).toBe(true);
+      expect(result.data.relays?.relay3).toBe(false);
+      expect(result.data.relays?.relay4).toBe(true);
+      expect(result.data.relay2).toBe(true);
+    }
+  });
+});
+

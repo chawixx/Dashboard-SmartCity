@@ -255,6 +255,36 @@ export function parseTelemetryPayload(
     validTelemetry.is_gas_polluted = obj.is_gas_polluted;
   }
 
+  // 6. Parse optional 4-channel relay states (IN1=38, IN2=39, IN3=40, IN4=41)
+  let parsedRelays = {
+    relay1: false,
+    relay2: false,
+    relay3: false,
+    relay4: false,
+  };
+  let hasRelayData = false;
+
+  if (obj.relays && typeof obj.relays === 'object' && !Array.isArray(obj.relays)) {
+    const rObj = obj.relays as Record<string, unknown>;
+    if (typeof rObj.relay1 === 'boolean') { parsedRelays.relay1 = rObj.relay1; hasRelayData = true; }
+    if (typeof rObj.relay2 === 'boolean') { parsedRelays.relay2 = rObj.relay2; hasRelayData = true; }
+    if (typeof rObj.relay3 === 'boolean') { parsedRelays.relay3 = rObj.relay3; hasRelayData = true; }
+    if (typeof rObj.relay4 === 'boolean') { parsedRelays.relay4 = rObj.relay4; hasRelayData = true; }
+  }
+
+  if (typeof obj.relay1 === 'boolean') { parsedRelays.relay1 = obj.relay1; hasRelayData = true; }
+  if (typeof obj.relay2 === 'boolean') { parsedRelays.relay2 = obj.relay2; hasRelayData = true; }
+  if (typeof obj.relay3 === 'boolean') { parsedRelays.relay3 = obj.relay3; hasRelayData = true; }
+  if (typeof obj.relay4 === 'boolean') { parsedRelays.relay4 = obj.relay4; hasRelayData = true; }
+
+  if (hasRelayData) {
+    validTelemetry.relays = parsedRelays;
+    validTelemetry.relay1 = parsedRelays.relay1;
+    validTelemetry.relay2 = parsedRelays.relay2;
+    validTelemetry.relay3 = parsedRelays.relay3;
+    validTelemetry.relay4 = parsedRelays.relay4;
+  }
+
   return {
     success: true,
     data: validTelemetry,

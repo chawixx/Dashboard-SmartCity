@@ -51,7 +51,9 @@ Every connected client must provide a unique `clientId` upon connection. Duplica
 | :--- | :--- | :--- | :--- | :---: | :---: |
 | **Telemetry** | `aethersense/{device_id}/telemetry` | ESP32-S3 | React Web | 0 | `false` |
 | **Device Status** | `aethersense/{device_id}/status` | ESP32-S3 | React Web | 1 | `true` |
+| **Actuator Command** | `aethersense/{device_id}/command` | React Web | ESP32-S3 | 0 | `false` |
 | **Dev Discovery** | `aethersense/+/telemetry` | *(Testing only)* | React Web | 0 | `false` |
+| **Cmd Discovery** | `aethersense/+/command` | *(Testing only)* | ESP32-S3 | 0 | `false` |
 
 ### 3.2 Last Will and Testament (LWT)
 When the ESP32-S3 connects, it registers an LWT configuration with the broker:
@@ -98,7 +100,17 @@ aethersense/{device_id}/telemetry
   "water_level_cm": 5.5,
   "flood_status": "Aman",
   "is_flood_warning": false,
-  "wifi_rssi_dbm": -54
+  "wifi_rssi_dbm": -54,
+  "relays": {
+    "relay1": false,
+    "relay2": false,
+    "relay3": false,
+    "relay4": false
+  },
+  "relay1": false,
+  "relay2": false,
+  "relay3": false,
+  "relay4": false
 }
 ```
 
@@ -125,11 +137,23 @@ aethersense/{device_id}/telemetry
 | `flood_status` | `string` (opt)| — | `Aman`, `Waspada`, `Siaga`, `Bahaya Banjir` | River flood risk classification. |
 | `is_flood_warning` | `boolean` (opt)| — | `true` / `false` | Critical flood risk indicator. |
 | `wifi_rssi_dbm` | `number` | dBm | $-100 \dots 0$ | Wi-Fi Received Signal Strength Indicator. |
+| `relays` | `object` (opt)| — | `{ relay1..4: boolean }` | Status aktif/padam seluruh 4 kanal relay LED kota. |
+| `relay1` | `boolean` (opt)| — | `true` (ON) / `false` (OFF) | Sektor 01: Kawasan Alun-Alun & Monumen (IN1 -> GPIO 38). |
+| `relay2` | `boolean` (opt)| — | `true` (ON) / `false` (OFF) | Sektor 02: Koridor Jl. KH Wahid Hasyim (IN2 -> GPIO 39). |
+| `relay3` | `boolean` (opt)| — | `true` (ON) / `false` (OFF) | Sektor 03: RTH & Jalur Sepeda (IN3 -> GPIO 40). |
+| `relay4` | `boolean` (opt)| — | `true` (ON) / `false` (OFF) | Sektor 04: Saluran Drainase & Tanggul (IN4 -> GPIO 41). |
 
 ### 4.4 TypeScript Interface
 ```typescript
 export type RainStatus = 'Kering' | 'Gerimis' | 'Hujan Sedang' | 'Hujan Lebat';
 export type FloodStatus = 'Aman' | 'Waspada' | 'Siaga' | 'Bahaya Banjir';
+
+export interface RelayStates {
+  relay1: boolean;
+  relay2: boolean;
+  relay3: boolean;
+  relay4: boolean;
+}
 
 export interface TelemetryData {
   device_id: string;
@@ -149,6 +173,11 @@ export interface TelemetryData {
   water_level_cm?: number;
   flood_status?: FloodStatus;
   is_flood_warning?: boolean;
+  relays?: RelayStates;
+  relay1?: boolean;
+  relay2?: boolean;
+  relay3?: boolean;
+  relay4?: boolean;
 }
 
 export type DeviceStatusPayload = 'online' | 'offline';
@@ -178,3 +207,51 @@ export type DeviceStatusPayload = 'online' | 'offline';
 1. **Non-Throwing Parser:** All MQTT messages must be processed inside try/catch blocks. Malformed JSON packets must be dropped silently or logged with rate-limited debugging warnings.
 2. **Type Enforcement:** If any numerical field is `NaN`, `null`, `undefined`, or outside acceptable physical limits, the packet is flagged invalid and discarded.
 3. **Immutability:** Field names in the contract cannot be changed without incrementing the protocol version and documenting in `CHANGELOG.md`.
+
+---
+
+## 7. Actuator & Relay Command Protocol (4 Sektor Lighting)
+
+### 7.1 Topic
+```text
+aethersense/{device_id}/command
+```
+*(Also accepts global broadcast on `aethersense/command` or `aethersense/+/command`)*
+
+### 7.2 Hardware Pin Mapping (4-Channel Optocoupler Relay)
+| Channel | ESP32-S3 GPIO | Sektor Penamaan | Peruntukan / Lokasi | Logika Aktif |
+| :--- | :--- | :--- | :--- | :--- |
+| **IN1** | **GPIO 38** | Sektor 01: Kawasan Alun-Alun & Monumen Bahari | Smart Pole Pedestrian & Air Mancur Sentral | `HIGH` = ON, `LOW` = OFF |
+| **IN2** | **GPIO 39** | Sektor 02: Koridor Jl. KH Wahid Hasyim | Penerangan Jalan Umum (PJU) & Sentra Kuliner Barat | `HIGH` = ON, `LOW` = OFF |
+| **IN3** | **GPIO 40** | Sektor 03: RTH & Jalur Sepeda Bahari | Eco-Lighting Bollard Vegetasi Pesisir | `HIGH` = ON, `LOW` = OFF |
+| **IN4** | **GPIO 41** | Sektor 04: Saluran Drainase & Tanggul Pesisir | Floodlight Sorot Inspeksi Pintu Air & Tanggul | `HIGH` = ON, `LOW` = OFF |
+
+### 7.3 Individual Sector Command Payload (JSON)
+```json
+{
+  "type": "relay",
+  "relay": 1,
+  "sector": 1,
+  "state": true,
+  "timestamp": 1790041250
+}
+```
+
+### 7.4 Master All-Sectors Command Payload (JSON)
+```json
+{
+  "type": "relay_all",
+  "relay": "all",
+  "state": false,
+  "timestamp": 1790041255
+}
+```
+
+### 7.5 Direct Fallback Text Commands
+The firmware also supports plain ASCII text commands for testing via CLI / terminal:
+* `RELAY1_ON` / `RELAY1_OFF` (Sektor 1 / GPIO 38)
+* `RELAY2_ON` / `RELAY2_OFF` (Sektor 2 / GPIO 39)
+* `RELAY3_ON` / `RELAY3_OFF` (Sektor 3 / GPIO 40)
+* `RELAY4_ON` / `RELAY4_OFF` (Sektor 4 / GPIO 41)
+* `ALL_ON` / `ALL_OFF` (Seluruh 4 Sektor)
+

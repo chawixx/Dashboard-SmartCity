@@ -15,6 +15,13 @@ export type AirQualityStatus =
   | 'Tercemar Gas'
   | 'Sangat Tercemar';
 
+export interface RelayStates {
+  relay1: boolean;
+  relay2: boolean;
+  relay3: boolean;
+  relay4: boolean;
+}
+
 export interface TelemetryData {
   device_id: string;
   sequence: number;
@@ -36,6 +43,11 @@ export interface TelemetryData {
   water_distance_cm?: number;
   flood_status?: FloodStatus;
   is_flood_warning?: boolean;
+  relays?: RelayStates;
+  relay1?: boolean;
+  relay2?: boolean;
+  relay3?: boolean;
+  relay4?: boolean;
 }
 
 export type DeviceStatus = 'online' | 'offline' | 'unknown';
