@@ -101,6 +101,10 @@ aethersense/{device_id}/telemetry
   "flood_status": "Aman",
   "is_flood_warning": false,
   "wifi_rssi_dbm": -54,
+  "ldr_raw": 1200,
+  "ambient_light": "Terang Siang",
+  "is_dark": false,
+  "lighting_mode": "auto",
   "relays": {
     "relay1": false,
     "relay2": false,
@@ -136,6 +140,10 @@ aethersense/{device_id}/telemetry
 | `water_level_cm` | `number` (opt)| cm | $0.0 \dots 30.0$ | Ketinggian muka air banjir ($30.0 - \text{water\_distance\_cm}$). |
 | `flood_status` | `string` (opt)| — | `Aman`, `Waspada`, `Siaga`, `Bahaya Banjir` | River flood risk classification. |
 | `is_flood_warning` | `boolean` (opt)| — | `true` / `false` | Critical flood risk indicator. |
+| `ldr_raw` | `number` (opt)| ADC count | $0 \dots 4095$ | Raw 12-bit analog reading from LDR Sensor (Pin 9 ADC1, lower = brighter). |
+| `ambient_light` | `string` (opt)| — | `Terang Siang`, `Redup / Mendung`, `Gelap Malam` | Human-readable ambient lighting classification. |
+| `is_dark` | `boolean` (opt)| — | `true` / `false` | Flag kondisi gelap untuk pemicu otomatis relay lampu. |
+| `lighting_mode` | `string` (opt)| — | `auto` / `manual` | Mode operasi penerangan kota (Auto LDR vs Manual Web). |
 | `wifi_rssi_dbm` | `number` | dBm | $-100 \dots 0$ | Wi-Fi Received Signal Strength Indicator. |
 | `relays` | `object` (opt)| — | `{ relay1..4: boolean }` | Status aktif/padam seluruh 4 kanal relay LED kota. |
 | `relay1` | `boolean` (opt)| — | `true` (ON) / `false` (OFF) | Sektor 01: Kawasan Alun-Alun & Monumen (IN1 -> GPIO 38). |
@@ -247,11 +255,25 @@ aethersense/{device_id}/command
 }
 ```
 
-### 7.5 Direct Fallback Text Commands
+### 7.5 Dual-Mode Lighting Command Payload (JSON)
+Switch between autonomous LDR light automation and manual web dashboard control:
+```json
+{
+  "type": "lighting_mode",
+  "action": "set_mode",
+  "mode": "auto",
+  "timestamp": 1790041260
+}
+```
+* `mode`: `"auto"` (Sensor LDR aktif, menyalakan relay saat gelap dan mematikan saat terang) atau `"manual"` (Sensor LDR di-bypass, operator memegang kendali relay penuh).
+
+### 7.6 Direct Fallback Text Commands
 The firmware also supports plain ASCII text commands for testing via CLI / terminal:
+* `MODE_AUTO` / `MODE_MANUAL` (Beralih mode otomatis LDR / manual web)
 * `RELAY1_ON` / `RELAY1_OFF` (Sektor 1 / GPIO 38)
 * `RELAY2_ON` / `RELAY2_OFF` (Sektor 2 / GPIO 39)
 * `RELAY3_ON` / `RELAY3_OFF` (Sektor 3 / GPIO 40)
 * `RELAY4_ON` / `RELAY4_OFF` (Sektor 4 / GPIO 41)
 * `ALL_ON` / `ALL_OFF` (Seluruh 4 Sektor)
+
 

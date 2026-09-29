@@ -5,17 +5,23 @@ import {
   MapPin,
   Cpu,
   Radio,
+  Sun,
+  Moon,
+  Sliders,
 } from 'lucide-react';
-import { type TelemetryData, type RelayStates } from '../../telemetry/types';
+import { type TelemetryData, type RelayStates, type LightingMode } from '../../telemetry/types';
 import {
   SECTOR_LIGHTING_CONFIGS,
   calculateLightingStats,
+  getAmbientLightGrade,
   type SectorLightingConfig,
 } from '../../telemetry/formatters';
 
 interface SectorLightingControlSectionProps {
   telemetry: TelemetryData | null;
   relayStates: RelayStates;
+  lightingMode?: LightingMode;
+  onSetLightingMode?: (mode: LightingMode) => void;
   onToggleRelay: (relayId: 1 | 2 | 3 | 4, nextState: boolean) => void;
   onToggleAllRelays: (nextState: boolean) => void;
   targetDeviceId: string;
@@ -25,21 +31,38 @@ interface SectorLightingControlSectionProps {
 export function SectorLightingControlSection({
   telemetry,
   relayStates,
+  lightingMode,
+  onSetLightingMode,
   onToggleRelay,
   onToggleAllRelays,
   targetDeviceId,
   isMqttConnected,
 }: SectorLightingControlSectionProps) {
   const stats = calculateLightingStats(relayStates);
+  const currentMode: LightingMode = lightingMode || telemetry?.lighting_mode || 'auto';
+  const ambientGrade = getAmbientLightGrade(telemetry?.ldr_raw, telemetry?.ambient_light);
 
   const handleToggle = (sector: SectorLightingConfig) => {
+    // If in auto mode and user clicks manual relay button, switch to manual mode automatically
+    if (currentMode === 'auto' && onSetLightingMode) {
+      onSetLightingMode('manual');
+    }
     const currentState = !!relayStates[sector.key];
     const nextState = !currentState;
     onToggleRelay(sector.id, nextState);
   };
 
   const handleAll = (turnOn: boolean) => {
+    if (currentMode === 'auto' && onSetLightingMode) {
+      onSetLightingMode('manual');
+    }
     onToggleAllRelays(turnOn);
+  };
+
+  const handleModeSwitch = (mode: LightingMode) => {
+    if (onSetLightingMode) {
+      onSetLightingMode(mode);
+    }
   };
 
   return (
@@ -130,6 +153,175 @@ export function SectorLightingControlSection({
               {targetDeviceId}
               {telemetry ? ` (Seq #${telemetry.sequence})` : ''}
             </code>
+          </div>
+        </div>
+      </div>
+
+      {/* Dual Mode Switch & LDR Ambient Lighting Card */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(8, 25, 46, 0.03), rgba(6, 182, 212, 0.05))',
+          borderRadius: 'var(--radius-card)',
+          border: '1px solid var(--hairline)',
+          padding: '1.5rem',
+          marginBottom: '2rem',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '1.5rem',
+          alignItems: 'center',
+        }}
+      >
+        {/* Left: Mode Selection Switcher */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <Sliders size={18} style={{ color: 'var(--brand)' }} />
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--brand)' }}>
+              Mode Kontrol Penerangan
+            </span>
+          </div>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--ink)', margin: '0 0 6px 0' }}>
+            {currentMode === 'auto' ? 'Mode Otomatis (Sensor LDR)' : 'Mode Manual (Operator Web)'}
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--ink-soft)', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+            {currentMode === 'auto'
+              ? 'Lampu menyala/padam otomatis sesuai resistansi sensor cahaya LDR (GPIO 9). Ambien gelap menyalakan semua sektor, ambien terang memadamkan lampu.'
+              : 'Sensor LDR di-bypass. Operator memegang kendali penuh mengaktifkan sakelar relay per sektor melalui tombol website di bawah ini.'}
+          </p>
+
+          {/* Segmented Switch Buttons */}
+          <div
+            style={{
+              display: 'inline-flex',
+              padding: '4px',
+              backgroundColor: 'rgba(8, 25, 46, 0.08)',
+              borderRadius: 'var(--radius-pill)',
+              border: '1px solid var(--hairline)',
+              gap: '4px',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => handleModeSwitch('auto')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 18px',
+                borderRadius: 'var(--radius-pill)',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: currentMode === 'auto' ? '#10b981' : 'transparent',
+                color: currentMode === 'auto' ? '#ffffff' : 'var(--ink-soft)',
+                boxShadow: currentMode === 'auto' ? '0 2px 8px rgba(16, 185, 129, 0.35)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Sun size={15} />
+              <span>☀️ Mode Otomatis (LDR)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleModeSwitch('manual')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 18px',
+                borderRadius: 'var(--radius-pill)',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+                backgroundColor: currentMode === 'manual' ? '#0f172a' : 'transparent',
+                color: currentMode === 'manual' ? '#ffffff' : 'var(--ink-soft)',
+                boxShadow: currentMode === 'manual' ? '0 2px 8px rgba(15, 23, 42, 0.35)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Power size={15} />
+              <span>🎛️ Mode Manual (Web)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Right: Real-time LDR Ambient Light Gauge */}
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            borderRadius: 'var(--radius-xl)',
+            border: `1px solid ${ambientGrade.borderColor}`,
+            padding: '1.25rem 1.5rem',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: ambientGrade.bgColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: ambientGrade.color,
+                }}
+              >
+                {ambientGrade.isDark ? <Moon size={18} /> : <Sun size={18} />}
+              </div>
+              <div>
+                <span style={{ fontSize: '0.68rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-soft)' }}>
+                  Sensor Cahaya Ambien
+                </span>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: ambientGrade.color }}>
+                  {ambientGrade.label}
+                </div>
+              </div>
+            </div>
+
+            <span
+              style={{
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-pill)',
+                backgroundColor: ambientGrade.bgColor,
+                color: ambientGrade.color,
+                border: `1px solid ${ambientGrade.borderColor}`,
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              {ambientGrade.badgeText}
+            </span>
+          </div>
+
+          {/* Progress / Brightness Bar */}
+          <div style={{ marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '4px' }}>
+              <span style={{ color: 'var(--ink-soft)' }}>Tingkat Kecerahan:</span>
+              <span style={{ fontWeight: 700, color: 'var(--ink)', fontFamily: 'var(--font-mono)' }}>
+                {ambientGrade.percent}% ({telemetry?.ldr_raw ?? 1000} ADC)
+              </span>
+            </div>
+            <div style={{ width: '100%', height: '8px', backgroundColor: 'rgba(0, 0, 0, 0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: `${ambientGrade.percent}%`,
+                  height: '100%',
+                  backgroundColor: ambientGrade.color,
+                  transition: 'width 0.4s ease, background-color 0.4s ease',
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--ink-soft)' }}>
+            <span>Pin: <code style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--ink)' }}>GPIO 9 (ADC1)</code></span>
+            <span>Threshold Gelap: <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink)' }}>&gt;2500 ADC</code></span>
           </div>
         </div>
       </div>
@@ -408,27 +600,47 @@ export function SectorLightingControlSection({
                     {sector.sectorTag}
                   </span>
 
-                  {/* Hardware Pin Badge */}
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      padding: '4px 10px',
-                      borderRadius: 'var(--radius-pill)',
-                      backgroundColor: isOn ? 'rgba(8, 25, 46, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-                      fontSize: '0.72rem',
-                      fontWeight: 600,
-                      fontFamily: 'var(--font-mono)',
-                      color: 'var(--ink)',
-                      border: '1px solid var(--hairline)',
-                    }}
-                  >
-                    <Zap size={12} style={{ color: sector.color }} />
-                    <span>
-                      {sector.pinName} &gt; GPIO {sector.gpio}
+                  {/* Mode & Hardware Pin Badges */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '3px 8px',
+                        borderRadius: 'var(--radius-pill)',
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        backgroundColor: currentMode === 'auto' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(15, 23, 42, 0.08)',
+                        color: currentMode === 'auto' ? '#059669' : '#334155',
+                        border: currentMode === 'auto' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(15, 23, 42, 0.15)',
+                      }}
+                    >
+                      {currentMode === 'auto' ? '🤖 AUTO' : '👤 MANUAL'}
                     </span>
-                  </span>
+
+                    {/* Hardware Pin Badge */}
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '4px 10px',
+                        borderRadius: 'var(--radius-pill)',
+                        backgroundColor: isOn ? 'rgba(8, 25, 46, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        fontFamily: 'var(--font-mono)',
+                        color: 'var(--ink)',
+                        border: '1px solid var(--hairline)',
+                      }}
+                    >
+                      <Zap size={12} style={{ color: sector.color }} />
+                      <span>
+                        {sector.pinName} &gt; GPIO {sector.gpio}
+                      </span>
+                    </span>
+                  </div>
                 </div>
 
                 {/* Light Lens Graphic & Status Indicator */}

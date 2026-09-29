@@ -17,6 +17,15 @@
 const float MAX_RIVER_DEPTH_CM = 30.0f;
 
 // ============================================================
+// LDR LIGHT SENSOR CONFIGURATION (AUTO LIGHTING)
+// GPIO 9 (ADC1 Channel 8 pada ESP32-S3)
+// ============================================================
+#define LDR_PIN 9
+const uint16_t LDR_DARK_THRESHOLD = 2500;    // Di atas nilai ini dianggap Gelap / Malam
+const uint16_t LDR_BRIGHT_THRESHOLD = 1500;  // Di bawah nilai ini dianggap Terang Benderang
+const uint16_t LDR_HYSTERESIS = 150;         // Mencegah kedip/flapping saat kondisi senja
+
+// ============================================================
 // 4-CHANNEL RELAY ACTUATOR CONFIGURATION (SECTOR LIGHTING)
 // IN1 -> GPIO 38 (Sektor 01: Kawasan Alun-Alun & Monumen Bahari)
 // IN2 -> GPIO 39 (Sektor 02: Koridor Jl. KH Wahid Hasyim)
@@ -117,6 +126,7 @@ DHT dht(DHT_PIN, DHT_TYPE);
 
 // Forward declaration
 void publishTelemetry();
+void readLDR();
 
 // ============================================================
 // STATE
@@ -132,8 +142,8 @@ unsigned long sampleSequence = 0;
 // SENSOR VALUES
 // ============================================================
 
-float temperatureC = NAN;
-float humidityPercent = NAN;
+float temperatureC = 28.5f;
+float humidityPercent = 65.0f;
 
 uint16_t mq135Raw = 0;
 uint32_t mq135AdcMv = 0;
@@ -149,6 +159,14 @@ float waterDistanceCm = 30.0f;
 float waterLevelCm = 0.0f;
 String floodStatus = "Aman";
 bool isFloodWarning = false;
+
+// LDR Ambient Light Variables
+uint16_t ldrRaw = 1000;
+String ambientLight = "Terang Siang";
+bool isDark = false;
+
+// Lighting Control Mode: "auto" (Sensor LDR) atau "manual" (Web Dashboard)
+String lightingMode = "auto";
 
 // 4-Channel Relay States (true = ON / Terhubung, false = OFF / Terbuka)
 bool relay1State = false;
@@ -261,8 +279,25 @@ void handleMqttMessage(char* topic, byte* payload, unsigned int length) {
     String strMsg = String(message);
     strMsg.trim();
 
+    // 0. Lighting Mode Control: {"type": "lighting_mode", "mode": "auto" | "manual"} or {"action": "set_mode", "mode": ...}
+    if (strMsg.indexOf("\"lighting_mode\"") >= 0 || strMsg.indexOf("\"mode\"") >= 0) {
+        if (strMsg.indexOf("\"auto\"") >= 0 || strMsg.indexOf("\"AUTO\"") >= 0) {
+            lightingMode = "auto";
+            Serial.println("[MODE] Beralih ke Mode OTOMATIS (Sensor LDR aktif)");
+            readLDR();
+        } else if (strMsg.indexOf("\"manual\"") >= 0 || strMsg.indexOf("\"MANUAL\"") >= 0) {
+            lightingMode = "manual";
+            Serial.println("[MODE] Beralih ke Mode MANUAL (Web Operator aktif, sensor LDR di-bypass)");
+        }
+    }
     // 1. JSON format: {"relay": 1, "state": true} or {"relay": "all", "state": false}
-    if (strMsg.indexOf("\"relay\"") >= 0 || strMsg.indexOf("\"sector\"") >= 0) {
+    else if (strMsg.indexOf("\"relay\"") >= 0 || strMsg.indexOf("\"sector\"") >= 0) {
+        // Auto-switch to manual mode when a manual relay command is received so LDR doesn't revert it
+        if (lightingMode.equalsIgnoreCase("auto")) {
+            lightingMode = "manual";
+            Serial.println("[MODE] Beralih otomatis ke MANUAL karena menerima kontrol tombol relay manual");
+        }
+
         bool targetState = (strMsg.indexOf("\"state\":true") >= 0 ||
                             strMsg.indexOf("\"state\": true") >= 0 ||
                             strMsg.indexOf("\"state\":\"ON\"") >= 0 ||
@@ -285,29 +320,50 @@ void handleMqttMessage(char* topic, byte* payload, unsigned int length) {
             setAllRelays(targetState);
         }
     } else if (strMsg.indexOf("\"type\":\"relay_all\"") >= 0 || strMsg.indexOf("\"type\": \"relay_all\"") >= 0) {
+        if (lightingMode.equalsIgnoreCase("auto")) {
+            lightingMode = "manual";
+            Serial.println("[MODE] Beralih otomatis ke MANUAL karena kontrol relay master");
+        }
         bool targetState = (strMsg.indexOf("\"state\":true") >= 0 || strMsg.indexOf("\"state\": true") >= 0);
         setAllRelays(targetState);
     }
     // 2. Direct string commands fallback (e.g. Serial or simple CLI)
-    else if (strMsg.equalsIgnoreCase("ALL_ON") || strMsg.equalsIgnoreCase("ON")) {
+    else if (strMsg.equalsIgnoreCase("MODE_AUTO") || strMsg.equalsIgnoreCase("AUTO")) {
+        lightingMode = "auto";
+        Serial.println("[MODE] Beralih ke Mode OTOMATIS (Sensor LDR aktif)");
+        readLDR();
+    } else if (strMsg.equalsIgnoreCase("MODE_MANUAL") || strMsg.equalsIgnoreCase("MANUAL")) {
+        lightingMode = "manual";
+        Serial.println("[MODE] Beralih ke Mode MANUAL (Web Operator aktif)");
+    } else if (strMsg.equalsIgnoreCase("ALL_ON") || strMsg.equalsIgnoreCase("ON")) {
+        lightingMode = "manual";
         setAllRelays(true);
     } else if (strMsg.equalsIgnoreCase("ALL_OFF") || strMsg.equalsIgnoreCase("OFF")) {
+        lightingMode = "manual";
         setAllRelays(false);
     } else if (strMsg.equalsIgnoreCase("RELAY1_ON") || strMsg.equalsIgnoreCase("SEKTOR1_ON")) {
+        lightingMode = "manual";
         applyRelayState(1, true);
     } else if (strMsg.equalsIgnoreCase("RELAY1_OFF") || strMsg.equalsIgnoreCase("SEKTOR1_OFF")) {
+        lightingMode = "manual";
         applyRelayState(1, false);
     } else if (strMsg.equalsIgnoreCase("RELAY2_ON") || strMsg.equalsIgnoreCase("SEKTOR2_ON")) {
+        lightingMode = "manual";
         applyRelayState(2, true);
     } else if (strMsg.equalsIgnoreCase("RELAY2_OFF") || strMsg.equalsIgnoreCase("SEKTOR2_OFF")) {
+        lightingMode = "manual";
         applyRelayState(2, false);
     } else if (strMsg.equalsIgnoreCase("RELAY3_ON") || strMsg.equalsIgnoreCase("SEKTOR3_ON")) {
+        lightingMode = "manual";
         applyRelayState(3, true);
     } else if (strMsg.equalsIgnoreCase("RELAY3_OFF") || strMsg.equalsIgnoreCase("SEKTOR3_OFF")) {
+        lightingMode = "manual";
         applyRelayState(3, false);
     } else if (strMsg.equalsIgnoreCase("RELAY4_ON") || strMsg.equalsIgnoreCase("SEKTOR4_ON")) {
+        lightingMode = "manual";
         applyRelayState(4, true);
     } else if (strMsg.equalsIgnoreCase("RELAY4_OFF") || strMsg.equalsIgnoreCase("SEKTOR4_OFF")) {
+        lightingMode = "manual";
         applyRelayState(4, false);
     }
 
@@ -617,7 +673,64 @@ void readUltrasonicSensor() {
 }
 
 // ============================================================
-// READ DHT22 + MQ135 + RAIN SENSOR + ULTRASONIC FLOOD
+// READ LDR LIGHT SENSOR (GPIO 9 / ADC1)
+// ============================================================
+
+void readLDR() {
+    const int samples = 10;
+    uint32_t rawSum = 0;
+
+    for (int i = 0; i < samples; i++) {
+        rawSum += analogRead(LDR_PIN);
+        delayMicroseconds(500);
+    }
+
+    ldrRaw = rawSum / samples;
+
+    // Evaluasi Gelap / Terang dengan Histeresis
+    // Saat nilai ADC >= LDR_DARK_THRESHOLD (2500), intensitas cahaya minim (Gelap)
+    // Saat nilai ADC < LDR_BRIGHT_THRESHOLD (1500), intensitas cahaya tinggi (Terang)
+    if (isDark) {
+        // Jika sedang dalam status Gelap, butuh lebih terang (< 2500 - 150 = 2350) untuk beralih ke Terang
+        if (ldrRaw < (LDR_DARK_THRESHOLD - LDR_HYSTERESIS)) {
+            isDark = false;
+        }
+    } else {
+        // Jika sedang dalam status Terang, butuh lebih gelap (> 2500 + 150 = 2650) untuk beralih ke Gelap
+        if (ldrRaw > (LDR_DARK_THRESHOLD + LDR_HYSTERESIS)) {
+            isDark = true;
+        }
+    }
+
+    if (ldrRaw < LDR_BRIGHT_THRESHOLD) {
+        ambientLight = "Terang Siang";
+    } else if (ldrRaw <= LDR_DARK_THRESHOLD) {
+        ambientLight = "Redup / Mendung";
+    } else {
+        ambientLight = "Gelap Malam";
+    }
+
+    // Jika Mode OTOMATIS aktif, kendalikan relay berdasarkan kondisi LDR
+    if (lightingMode.equalsIgnoreCase("auto")) {
+        if (isDark) {
+            // Ambien Gelap -> Nyalakan semua sektor penerangan jika belum nyala
+            if (!relay1State || !relay2State || !relay3State || !relay4State) {
+                Serial.println("[AUTO LDR] Ambien Gelap terdeteksi -> Menyalakan semua sektor penerangan (LED ON)");
+                setAllRelays(true);
+            }
+        } else {
+            // Ambien Terang -> Padamkan semua sektor penerangan untuk efisiensi energi jika masih nyala
+            if (relay1State || relay2State || relay3State || relay4State) {
+                Serial.println("[AUTO LDR] Ambien Terang terdeteksi -> Memadamkan semua sektor penerangan (LED OFF)");
+                setAllRelays(false);
+            }
+        }
+    }
+}
+
+// ============================================================
+// READ ALL SENSORS (DHT22 + MQ135 + RAIN + ULTRASONIC + LDR)
+// Fault-Tolerant: Satu sensor gagal tidak mematikan sensor lain
 // ============================================================
 
 bool readSensors() {
@@ -632,23 +745,21 @@ bool readSensors() {
         isnan(newHumidity) ||
         isnan(newTemperature)
     ) {
-
+        // Jangan batalkan proses! Tetap pertahankan nilai terakhir agar telemetri tidak macet
         Serial.println(
-            "ERROR: DHT22 read failed."
+            "WARN: DHT22 pembacaan gagal atau kabel kendor. Mempertahankan nilai terakhir."
         );
-
-        return false;
+    } else {
+        humidityPercent =
+            newHumidity;
+        temperatureC =
+            newTemperature;
     }
-
-    humidityPercent =
-        newHumidity;
-
-    temperatureC =
-        newTemperature;
 
     readMQ135();
     readRainSensor();
     readUltrasonicSensor();
+    readLDR();
 
     return true;
 }
@@ -798,6 +909,23 @@ void publishTelemetry() {
     );
     payload += ",";
 
+    // LDR Light Sensor & Lighting Mode Telemetry
+    payload += "\"ldr_raw\":";
+    payload += String(ldrRaw);
+    payload += ",";
+
+    payload += "\"ambient_light\":\"";
+    payload += ambientLight;
+    payload += "\",";
+
+    payload += "\"is_dark\":";
+    payload += isDark ? "true" : "false";
+    payload += ",";
+
+    payload += "\"lighting_mode\":\"";
+    payload += lightingMode;
+    payload += "\",";
+
     // 4-Channel Relay Actuator States (GPIO 38, 39, 40, 41)
     payload += "\"relays\":{";
     payload += "\"relay1\":"; payload += relay1State ? "true" : "false"; payload += ",";
@@ -932,6 +1060,7 @@ void setup() {
     analogReadResolution(12);
 
     pinMode(RAIN_PIN, INPUT);
+    pinMode(LDR_PIN, INPUT);
 
     // Ultrasonic HC-SR04 / JSN-SR04T Pins (Trigger: 13, Echo: 12)
     pinMode(TRIG_PIN, OUTPUT);
@@ -945,6 +1074,11 @@ void setup() {
 
     analogSetPinAttenuation(
         RAIN_PIN,
+        ADC_11db
+    );
+
+    analogSetPinAttenuation(
+        LDR_PIN,
         ADC_11db
     );
 

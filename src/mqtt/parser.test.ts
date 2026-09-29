@@ -424,3 +424,56 @@ describe('Relay & Actuator Telemetry Parser (IN1=38, IN2=39, IN3=40, IN4=41)', (
   });
 });
 
+describe('LDR Ambient Light Sensor & Lighting Mode Parser (PRD / Contract Update)', () => {
+  it('parses ldr_raw, ambient_light, is_dark, and lighting_mode correctly', () => {
+    const payload = JSON.stringify({
+      device_id: 'esp32s3-LDRTEST',
+      sequence: 10,
+      timestamp: 1790000000,
+      uptime_s: 120,
+      temperature_c: 28.4,
+      humidity_percent: 68.0,
+      mq135_raw: 750,
+      mq135_adc_mv: 580,
+      mq135_sensor_mv: 966.7,
+      wifi_rssi_dbm: -55,
+      ldr_raw: 2850,
+      ambient_light: 'Gelap Malam',
+      is_dark: true,
+      lighting_mode: 'auto',
+    });
+
+    const result = parseTelemetryPayload(payload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.ldr_raw).toBe(2850);
+      expect(result.data.ambient_light).toBe('Gelap Malam');
+      expect(result.data.is_dark).toBe(true);
+      expect(result.data.lighting_mode).toBe('auto');
+    }
+  });
+
+  it('rejects out of range ldr_raw value (>4095)', () => {
+    const payload = JSON.stringify({
+      device_id: 'esp32s3-LDRTEST',
+      sequence: 11,
+      timestamp: 1790000000,
+      uptime_s: 120,
+      temperature_c: 28.4,
+      humidity_percent: 68.0,
+      mq135_raw: 750,
+      mq135_adc_mv: 580,
+      mq135_sensor_mv: 966.7,
+      wifi_rssi_dbm: -55,
+      ldr_raw: 5000,
+    });
+
+    const result = parseTelemetryPayload(payload);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('ldr_raw');
+    }
+  });
+});
+
+

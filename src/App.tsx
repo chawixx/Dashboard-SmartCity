@@ -5,7 +5,7 @@ import { useMqtt } from './hooks/useMqtt';
 import { useTelemetry } from './hooks/useTelemetry';
 import { mqttConfig } from './mqtt/config';
 import { extractDeviceIdFromTopic, getTelemetryTopic, getStatusTopic, getCommandTopic } from './mqtt/topics';
-import { type RelayStates } from './telemetry/types';
+import { type RelayStates, type LightingMode } from './telemetry/types';
 
 // Editorial Components (PRD v2.0 - Tegal EcoSense Observatory)
 import { IntroLoader } from './components/editorial/IntroLoader';
@@ -205,7 +205,33 @@ export default function App() {
     }
   }, [telemetry]);
 
+  const [lightingMode, setLightingMode] = useState<LightingMode>('auto');
+
+  // Synchronize lighting mode from incoming live telemetry if provided
+  useEffect(() => {
+    if (telemetry?.lighting_mode && (telemetry.lighting_mode === 'auto' || telemetry.lighting_mode === 'manual')) {
+      const mode = telemetry.lighting_mode;
+      queueMicrotask(() => {
+        setLightingMode(mode);
+      });
+    }
+  }, [telemetry?.lighting_mode]);
+
+  const handleSetLightingMode = (mode: LightingMode) => {
+    setLightingMode(mode);
+    const payload = JSON.stringify({
+      type: 'lighting_mode',
+      action: 'set_mode',
+      mode,
+      timestamp: Math.floor(Date.now() / 1000),
+    });
+    publish(simCommandTopic, payload);
+  };
+
   const handleToggleRelay = (relayId: 1 | 2 | 3 | 4, nextState: boolean) => {
+    // Switching to manual mode when operator triggers relay directly
+    setLightingMode('manual');
+
     // 1. Optimistic UI update
     setRelayStates((prev) => ({
       ...prev,
@@ -224,6 +250,8 @@ export default function App() {
   };
 
   const handleToggleAllRelays = (nextState: boolean) => {
+    setLightingMode('manual');
+
     setRelayStates({
       relay1: nextState,
       relay2: nextState,
@@ -262,6 +290,10 @@ export default function App() {
       water_level_cm: 4.6,
       flood_status: 'Aman',
       is_flood_warning: false,
+      ldr_raw: 920,
+      ambient_light: 'Terang Siang',
+      is_dark: false,
+      lighting_mode: lightingMode,
       wifi_rssi_dbm: Math.floor(-56 + (Math.random() * 10 - 5)),
       relays: relayStates,
       relay1: relayStates.relay1,
@@ -286,6 +318,8 @@ export default function App() {
       const isFlood = dist <= 12.0;
       const isPollutedSample = i % 5 === 4;
       const mqSample = isPollutedSample ? 3400 : Math.floor(500 + (i % 4) * 300);
+      const isDarkSample = i % 3 === 2;
+      const ldrSample = isDarkSample ? 2850 : 850;
       const payload = JSON.stringify({
         device_id: simDeviceId,
         sequence: currentSeq,
@@ -305,6 +339,10 @@ export default function App() {
         water_level_cm: floodH,
         flood_status: dist <= 6.0 ? 'Bahaya Banjir' : dist <= 12.0 ? 'Siaga' : dist <= 20.0 ? 'Waspada' : 'Aman',
         is_flood_warning: isFlood,
+        ldr_raw: ldrSample,
+        ambient_light: isDarkSample ? 'Gelap Malam' : 'Terang Siang',
+        is_dark: isDarkSample,
+        lighting_mode: lightingMode,
         wifi_rssi_dbm: Math.floor(-54 - (i % 3) * 2),
         relays: relayStates,
         relay1: relayStates.relay1,
@@ -346,7 +384,16 @@ export default function App() {
       water_level_cm: 4.6,
       flood_status: 'Aman',
       is_flood_warning: false,
+      ldr_raw: 920,
+      ambient_light: 'Terang Siang',
+      is_dark: false,
+      lighting_mode: lightingMode,
       wifi_rssi_dbm: -55,
+      relays: relayStates,
+      relay1: relayStates.relay1,
+      relay2: relayStates.relay2,
+      relay3: relayStates.relay3,
+      relay4: relayStates.relay4,
     });
     publish(simTelemetryTopic, payload);
   };
@@ -372,7 +419,16 @@ export default function App() {
       water_level_cm: 4.6,
       flood_status: 'Aman',
       is_flood_warning: false,
+      ldr_raw: 920,
+      ambient_light: 'Terang Siang',
+      is_dark: false,
+      lighting_mode: lightingMode,
       wifi_rssi_dbm: -58,
+      relays: relayStates,
+      relay1: relayStates.relay1,
+      relay2: relayStates.relay2,
+      relay3: relayStates.relay3,
+      relay4: relayStates.relay4,
     });
     publish(simTelemetryTopic, payload);
   };
@@ -424,6 +480,8 @@ export default function App() {
         <SectorLightingControlSection
           telemetry={telemetry}
           relayStates={relayStates}
+          lightingMode={lightingMode}
+          onSetLightingMode={handleSetLightingMode}
           onToggleRelay={handleToggleRelay}
           onToggleAllRelays={handleToggleAllRelays}
           targetDeviceId={activeDeviceId}

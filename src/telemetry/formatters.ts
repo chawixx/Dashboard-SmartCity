@@ -309,3 +309,80 @@ export function calculateLightingStats(states: RelayStates) {
     powerKwhEquivalent: +(totalWatt / 1000).toFixed(2),
   };
 }
+
+export interface AmbientLightGrade {
+  status: string;
+  label: string;
+  badgeText: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  description: string;
+  isDark: boolean;
+  percent: number;
+}
+
+/**
+ * Evaluates LDR sensor reading into human-readable ambient lighting tiers.
+ */
+export function getAmbientLightGrade(
+  raw?: number | null,
+  explicitStatus?: string
+): AmbientLightGrade {
+  if (raw === null || raw === undefined) {
+    return {
+      status: explicitStatus || 'Terang Siang',
+      label: explicitStatus || 'Terang Siang',
+      badgeText: 'TERANG SIANG',
+      color: '#f59e0b',
+      bgColor: 'rgba(245, 158, 11, 0.12)',
+      borderColor: 'rgba(245, 158, 11, 0.35)',
+      description: 'Intensitas cahaya ambien memadai, penerangan lampu nonaktif.',
+      isDark: false,
+      percent: 85,
+    };
+  }
+
+  const clampedRaw = Math.max(0, Math.min(4095, raw));
+  const brightnessPercent = Math.max(0, Math.min(100, Math.round(((4095 - clampedRaw) / 4095) * 100)));
+
+  if (clampedRaw >= 2500 || explicitStatus?.includes('Gelap')) {
+    return {
+      status: 'Gelap Malam',
+      label: 'Gelap Malam',
+      badgeText: 'MALAM / GELAP',
+      color: '#818cf8',
+      bgColor: 'rgba(99, 102, 241, 0.15)',
+      borderColor: 'rgba(99, 102, 241, 0.40)',
+      description: 'Intensitas cahaya minim di bawah ambang batas (LDR >2500 ADC). Mode Auto menyalakan lampu.',
+      isDark: true,
+      percent: brightnessPercent,
+    };
+  }
+
+  if (clampedRaw >= 1500 || explicitStatus?.includes('Redup')) {
+    return {
+      status: 'Redup / Mendung',
+      label: 'Redup / Mendung',
+      badgeText: 'SENJA / REDUP',
+      color: '#f59e0b',
+      bgColor: 'rgba(245, 158, 11, 0.15)',
+      borderColor: 'rgba(245, 158, 11, 0.40)',
+      description: 'Kondisi senja atau awan mendung tebal (1500 - 2500 ADC). Ambang transisi pencahayaan.',
+      isDark: false,
+      percent: brightnessPercent,
+    };
+  }
+
+  return {
+    status: 'Terang Siang',
+    label: 'Terang Siang',
+    badgeText: 'TERANG BENDERANG',
+    color: '#10b981',
+    bgColor: 'rgba(16, 185, 129, 0.12)',
+    borderColor: 'rgba(16, 185, 129, 0.35)',
+    description: 'Cahaya matahari alami cukup terang (<1500 ADC). Semua lampu otomatis padam.',
+    isDark: false,
+    percent: brightnessPercent,
+  };
+}

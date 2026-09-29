@@ -5,6 +5,15 @@
 
 export type RainStatus = 'Kering' | 'Gerimis' | 'Hujan Sedang' | 'Hujan Lebat';
 export type FloodStatus = 'Aman' | 'Waspada' | 'Siaga' | 'Bahaya Banjir';
+export type LightingMode = 'auto' | 'manual';
+export type AmbientLightStatus =
+  | 'Terang'
+  | 'Terang Siang'
+  | 'Redup'
+  | 'Redup / Mendung'
+  | 'Gelap'
+  | 'Gelap Malam';
+
 export type AirQualityStatus =
   | 'Sangat Bersih'
   | 'Normal / Cukup Baik'
@@ -43,6 +52,10 @@ export interface TelemetryData {
   water_distance_cm?: number;
   flood_status?: FloodStatus;
   is_flood_warning?: boolean;
+  ldr_raw?: number;
+  ambient_light?: string;
+  is_dark?: boolean;
+  lighting_mode?: LightingMode;
   relays?: RelayStates;
   relay1?: boolean;
   relay2?: boolean;
@@ -70,4 +83,5 @@ export const TELEMETRY_LIMITS = {
   water_level_raw: { min: 0, max: 4095 },
   water_level_cm: { min: 0, max: 500 },
   water_distance_cm: { min: 0, max: 500 },
+  ldr_raw: { min: 0, max: 4095 },
 } as const;

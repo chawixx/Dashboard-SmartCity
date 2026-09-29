@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TelemetryStore } from './store';
-import { formatUptime, getRssiQuality, getAirQualityGrade } from './formatters';
+import { formatUptime, getRssiQuality, getAirQualityGrade, getAmbientLightGrade } from './formatters';
 
 describe('Telemetry Formatters (PRD Section 12)', () => {
   it('formats seconds into exact HH:MM:SS format', () => {
@@ -42,6 +42,29 @@ describe('Telemetry Formatters (PRD Section 12)', () => {
     const explicitGrade = getAirQualityGrade(250, 'Tercemar');
     expect(explicitGrade.status).toBe('Tercemar');
     expect(explicitGrade.isPolluted).toBe(true);
+  });
+
+  it('classifies ambient light grades accurately across bright, dim, and dark states', () => {
+    // Terang Siang (< 1500 ADC)
+    const bright = getAmbientLightGrade(800);
+    expect(bright.status).toBe('Terang Siang');
+    expect(bright.isDark).toBe(false);
+    expect(bright.percent).toBeGreaterThan(60);
+
+    // Redup / Mendung (1500 - 2500 ADC)
+    const dim = getAmbientLightGrade(2000);
+    expect(dim.status).toBe('Redup / Mendung');
+    expect(dim.isDark).toBe(false);
+
+    // Gelap Malam (>= 2500 ADC)
+    const dark = getAmbientLightGrade(3000);
+    expect(dark.status).toBe('Gelap Malam');
+    expect(dark.isDark).toBe(true);
+
+    // Explicit status override
+    const explicit = getAmbientLightGrade(800, 'Gelap Malam');
+    expect(explicit.status).toBe('Gelap Malam');
+    expect(explicit.isDark).toBe(true);
   });
 });
 

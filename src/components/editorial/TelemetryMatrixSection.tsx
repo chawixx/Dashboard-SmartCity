@@ -70,6 +70,18 @@ export function TelemetryMatrixSection({
     },
     {
       index: '06',
+      title: 'Intensitas Cahaya Ambien (LDR Sensor)',
+      value: telemetry?.ambient_light
+        ? `${telemetry.ambient_light} (${telemetry.ldr_raw ?? '----'} ADC)`
+        : telemetry?.ldr_raw !== undefined
+        ? `${telemetry.ldr_raw} ADC`
+        : 'N/A',
+      description: 'Intensitas cahaya alami untuk otomatisasi penerangan jalan 4 sektor Alun-Alun (GPIO 9 ADC1).',
+      anchor: '#lighting-control',
+      highlightColor: '#f59e0b',
+    },
+    {
+      index: '07',
       title: 'Kekuatan Sinyal & Uptime (ESP32-S3)',
       value: telemetry ? `${telemetry.wifi_rssi_dbm} dBm · Up ${formattedUptime}` : '-- dBm',
       description: 'Kekuatan sinyal Wi-Fi transceiver ESP32-S3 dan jam uptime pemrosesan telemetri.',

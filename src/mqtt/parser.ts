@@ -201,6 +201,16 @@ export function parseTelemetryPayload(
     }
   }
 
+  if (obj.ldr_raw !== undefined) {
+    if (!isValidNumber(obj.ldr_raw, TELEMETRY_LIMITS.ldr_raw.min, TELEMETRY_LIMITS.ldr_raw.max)) {
+      return {
+        success: false,
+        error: `Invalid "ldr_raw": ${obj.ldr_raw} (expected ${TELEMETRY_LIMITS.ldr_raw.min}..${TELEMETRY_LIMITS.ldr_raw.max} ADC count)`,
+        rawPayload: raw,
+      };
+    }
+  }
+
   // Construct typed and clean TelemetryData object
   const validTelemetry: TelemetryData = {
     device_id: deviceId,
@@ -253,6 +263,22 @@ export function parseTelemetryPayload(
 
   if (typeof obj.is_gas_polluted === 'boolean') {
     validTelemetry.is_gas_polluted = obj.is_gas_polluted;
+  }
+
+  if (obj.ldr_raw !== undefined) {
+    validTelemetry.ldr_raw = Math.floor(obj.ldr_raw as number);
+  }
+
+  if (typeof obj.ambient_light === 'string' && obj.ambient_light.trim().length > 0) {
+    validTelemetry.ambient_light = obj.ambient_light.trim();
+  }
+
+  if (typeof obj.is_dark === 'boolean') {
+    validTelemetry.is_dark = obj.is_dark;
+  }
+
+  if (typeof obj.lighting_mode === 'string' && (obj.lighting_mode === 'auto' || obj.lighting_mode === 'manual')) {
+    validTelemetry.lighting_mode = obj.lighting_mode;
   }
 
   // 6. Parse optional 4-channel relay states (IN1=38, IN2=39, IN3=40, IN4=41)

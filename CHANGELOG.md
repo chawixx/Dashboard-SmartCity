@@ -168,4 +168,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed action feedback notification banner to provide a clean, silent, and seamless tactile control experience.
   - Added "Penerangan" navigation links in `SiteHeader.tsx` and `DropletMenuDropdown.tsx` pointing directly to `#lighting-control`.
 
+---
+
+## [0.4.0] - 2026-09-29
+
+### Added
+- **LDR Ambient Light Sensor & Dual-Mode Lighting Control (Auto vs Manual):**
+  - Integrated LDR Light Dependent Resistor on **GPIO 9 (ADC1 Channel 8)** on ESP32-S3.
+  - Implemented dual-mode lighting control engine:
+    - **Mode Otomatis (Auto LDR):** Evaluates ambient light with deadband hysteresis (`LDR_DARK_THRESHOLD = 2500`, `LDR_BRIGHT_THRESHOLD = 1500`, `LDR_HYSTERESIS = 150`). Automatically energizes all 4 sector relays when dark, and de-energizes them when bright.
+    - **Mode Manual (Operator Web):** Bypasses LDR automation, allowing web dashboard operators to freely toggle individual sectors via tactile relay buttons.
+  - Added interactive Segmented Mode Switcher & Real-time LDR Ambient Light Gauge in `SectorLightingControlSection.tsx` with dynamic Sun/Moon icons, brightness percentage, and active rule notice.
+  - Added Intensitas Cahaya Ambien (LDR Sensor) row (#06) to `TelemetryMatrixSection.tsx`.
+  - Added `getAmbientLightGrade` formatter utility in `src/telemetry/formatters.ts`.
+  - Added full test coverage for LDR parsing and formatting in `parser.test.ts` and `store.test.ts` (56/56 tests passing).
+  - Documented dual-mode lighting command schema and LDR telemetry in `MQTT-CONTRACT.md`.
+
+### Fixed
+- **Sensor Reading Fault Tolerance in ESP32 Firmware:**
+  - Resolved critical issue where transient DHT22 read errors or loose sensor cables completely blocked `publishTelemetry()`.
+  - `readSensors()` is now non-blocking and fault-tolerant: failure of one sensor preserves previous readings and allows remaining sensors (MQ-135, Rain, Ultrasonic, LDR) to be transmitted without interruption.
+
+
 
