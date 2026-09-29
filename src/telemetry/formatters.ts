@@ -323,21 +323,56 @@ export interface AmbientLightGrade {
 }
 
 /**
- * Evaluates LDR sensor reading into human-readable ambient lighting tiers.
+ * Evaluates LDR sensor reading into 2 binary conditions:
+ * < 500: Terang / Mati (banyak cahaya terbaca sensor)
+ * > 500: Menyala / Gelap (sedikit cahaya terbaca sensor)
  */
 export function getAmbientLightGrade(
   raw?: number | null,
   explicitStatus?: string
 ): AmbientLightGrade {
+  if (explicitStatus) {
+    if (explicitStatus.includes('Gelap') || explicitStatus.includes('Menyala')) {
+      const clampedRaw = raw !== null && raw !== undefined ? Math.max(0, Math.min(4095, raw)) : 3000;
+      const brightnessPercent = Math.max(0, Math.min(100, Math.round(((4095 - clampedRaw) / 4095) * 100)));
+      return {
+        status: explicitStatus,
+        label: explicitStatus.includes('Menyala') ? explicitStatus : `${explicitStatus} (Lampu Menyala)`,
+        badgeText: 'GELAP (MENYALA)',
+        color: '#818cf8',
+        bgColor: 'rgba(99, 102, 241, 0.15)',
+        borderColor: 'rgba(99, 102, 241, 0.40)',
+        description: 'Sedikit cahaya terbaca sensor (>500 ADC). Mode Auto menyalakan lampu.',
+        isDark: true,
+        percent: brightnessPercent,
+      };
+    }
+    if (explicitStatus.includes('Terang') || explicitStatus.includes('Mati')) {
+      const clampedRaw = raw !== null && raw !== undefined ? Math.max(0, Math.min(4095, raw)) : 300;
+      const brightnessPercent = Math.max(0, Math.min(100, Math.round(((4095 - clampedRaw) / 4095) * 100)));
+      return {
+        status: explicitStatus,
+        label: explicitStatus.includes('Padam') || explicitStatus.includes('Mati') ? explicitStatus : `${explicitStatus} (Lampu Padam)`,
+        badgeText: 'TERANG (MATI)',
+        color: '#10b981',
+        bgColor: 'rgba(16, 185, 129, 0.12)',
+        borderColor: 'rgba(16, 185, 129, 0.35)',
+        description: 'Banyak cahaya terbaca sensor (<500 ADC). Mode Auto memadamkan lampu.',
+        isDark: false,
+        percent: brightnessPercent,
+      };
+    }
+  }
+
   if (raw === null || raw === undefined) {
     return {
-      status: explicitStatus || 'Terang Siang',
-      label: explicitStatus || 'Terang Siang',
-      badgeText: 'TERANG SIANG',
-      color: '#f59e0b',
-      bgColor: 'rgba(245, 158, 11, 0.12)',
-      borderColor: 'rgba(245, 158, 11, 0.35)',
-      description: 'Intensitas cahaya ambien memadai, penerangan lampu nonaktif.',
+      status: 'Terang',
+      label: 'Terang (Lampu Padam)',
+      badgeText: 'TERANG (MATI)',
+      color: '#10b981',
+      bgColor: 'rgba(16, 185, 129, 0.12)',
+      borderColor: 'rgba(16, 185, 129, 0.35)',
+      description: 'Banyak cahaya terbaca sensor (<500 ADC). Mode Auto memadamkan lampu.',
       isDark: false,
       percent: 85,
     };
@@ -346,42 +381,31 @@ export function getAmbientLightGrade(
   const clampedRaw = Math.max(0, Math.min(4095, raw));
   const brightnessPercent = Math.max(0, Math.min(100, Math.round(((4095 - clampedRaw) / 4095) * 100)));
 
-  if (clampedRaw >= 2500 || explicitStatus?.includes('Gelap')) {
+  // Binary LDR Threshold:
+  // > 500 : Menyala (sedikit cahaya terbaca sensor)
+  // < 500 : Mati (banyak cahaya terbaca sensor)
+  if (clampedRaw > 500) {
     return {
-      status: 'Gelap Malam',
-      label: 'Gelap Malam',
-      badgeText: 'MALAM / GELAP',
+      status: 'Gelap',
+      label: 'Gelap (Lampu Menyala)',
+      badgeText: 'GELAP (MENYALA)',
       color: '#818cf8',
       bgColor: 'rgba(99, 102, 241, 0.15)',
       borderColor: 'rgba(99, 102, 241, 0.40)',
-      description: 'Intensitas cahaya minim di bawah ambang batas (LDR >2500 ADC). Mode Auto menyalakan lampu.',
+      description: 'Sedikit cahaya terbaca sensor (>500 ADC). Mode Auto menyalakan lampu.',
       isDark: true,
       percent: brightnessPercent,
     };
   }
 
-  if (clampedRaw >= 1500 || explicitStatus?.includes('Redup')) {
-    return {
-      status: 'Redup / Mendung',
-      label: 'Redup / Mendung',
-      badgeText: 'SENJA / REDUP',
-      color: '#f59e0b',
-      bgColor: 'rgba(245, 158, 11, 0.15)',
-      borderColor: 'rgba(245, 158, 11, 0.40)',
-      description: 'Kondisi senja atau awan mendung tebal (1500 - 2500 ADC). Ambang transisi pencahayaan.',
-      isDark: false,
-      percent: brightnessPercent,
-    };
-  }
-
   return {
-    status: 'Terang Siang',
-    label: 'Terang Siang',
-    badgeText: 'TERANG BENDERANG',
+    status: 'Terang',
+    label: 'Terang (Lampu Padam)',
+    badgeText: 'TERANG (MATI)',
     color: '#10b981',
     bgColor: 'rgba(16, 185, 129, 0.12)',
     borderColor: 'rgba(16, 185, 129, 0.35)',
-    description: 'Cahaya matahari alami cukup terang (<1500 ADC). Semua lampu otomatis padam.',
+    description: 'Banyak cahaya terbaca sensor (<500 ADC). Mode Auto memadamkan lampu.',
     isDark: false,
     percent: brightnessPercent,
   };

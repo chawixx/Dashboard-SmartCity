@@ -290,8 +290,8 @@ export default function App() {
       water_level_cm: 4.6,
       flood_status: 'Aman',
       is_flood_warning: false,
-      ldr_raw: 920,
-      ambient_light: 'Terang Siang',
+      ldr_raw: 280,
+      ambient_light: 'Terang',
       is_dark: false,
       lighting_mode: lightingMode,
       wifi_rssi_dbm: Math.floor(-56 + (Math.random() * 10 - 5)),
@@ -319,7 +319,7 @@ export default function App() {
       const isPollutedSample = i % 5 === 4;
       const mqSample = isPollutedSample ? 3400 : Math.floor(500 + (i % 4) * 300);
       const isDarkSample = i % 3 === 2;
-      const ldrSample = isDarkSample ? 2850 : 850;
+      const ldrSample = isDarkSample ? 750 : 280;
       const payload = JSON.stringify({
         device_id: simDeviceId,
         sequence: currentSeq,
@@ -340,7 +340,7 @@ export default function App() {
         flood_status: dist <= 6.0 ? 'Bahaya Banjir' : dist <= 12.0 ? 'Siaga' : dist <= 20.0 ? 'Waspada' : 'Aman',
         is_flood_warning: isFlood,
         ldr_raw: ldrSample,
-        ambient_light: isDarkSample ? 'Gelap Malam' : 'Terang Siang',
+        ambient_light: isDarkSample ? 'Gelap' : 'Terang',
         is_dark: isDarkSample,
         lighting_mode: lightingMode,
         wifi_rssi_dbm: Math.floor(-54 - (i % 3) * 2),
@@ -384,8 +384,8 @@ export default function App() {
       water_level_cm: 4.6,
       flood_status: 'Aman',
       is_flood_warning: false,
-      ldr_raw: 920,
-      ambient_light: 'Terang Siang',
+      ldr_raw: 280,
+      ambient_light: 'Terang',
       is_dark: false,
       lighting_mode: lightingMode,
       wifi_rssi_dbm: -55,
@@ -419,8 +419,8 @@ export default function App() {
       water_level_cm: 4.6,
       flood_status: 'Aman',
       is_flood_warning: false,
-      ldr_raw: 920,
-      ambient_light: 'Terang Siang',
+      ldr_raw: 280,
+      ambient_light: 'Terang',
       is_dark: false,
       lighting_mode: lightingMode,
       wifi_rssi_dbm: -58,

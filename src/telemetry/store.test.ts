@@ -44,27 +44,28 @@ describe('Telemetry Formatters (PRD Section 12)', () => {
     expect(explicitGrade.isPolluted).toBe(true);
   });
 
-  it('classifies ambient light grades accurately across bright, dim, and dark states', () => {
-    // Terang Siang (< 1500 ADC)
-    const bright = getAmbientLightGrade(800);
-    expect(bright.status).toBe('Terang Siang');
+  it('classifies ambient light grades accurately across bright (<500) and dark (>500) states', () => {
+    // Terang (< 500 ADC) -> Banyak cahaya -> Lampu Mati
+    const bright = getAmbientLightGrade(300);
+    expect(bright.status).toBe('Terang');
     expect(bright.isDark).toBe(false);
+    expect(bright.badgeText).toBe('TERANG (MATI)');
     expect(bright.percent).toBeGreaterThan(60);
 
-    // Redup / Mendung (1500 - 2500 ADC)
-    const dim = getAmbientLightGrade(2000);
-    expect(dim.status).toBe('Redup / Mendung');
-    expect(dim.isDark).toBe(false);
-
-    // Gelap Malam (>= 2500 ADC)
-    const dark = getAmbientLightGrade(3000);
-    expect(dark.status).toBe('Gelap Malam');
+    // Gelap (> 500 ADC) -> Sedikit cahaya -> Lampu Menyala
+    const dark = getAmbientLightGrade(750);
+    expect(dark.status).toBe('Gelap');
     expect(dark.isDark).toBe(true);
+    expect(dark.badgeText).toBe('GELAP (MENYALA)');
 
     // Explicit status override
-    const explicit = getAmbientLightGrade(800, 'Gelap Malam');
-    expect(explicit.status).toBe('Gelap Malam');
+    const explicit = getAmbientLightGrade(300, 'Gelap');
+    expect(explicit.status).toBe('Gelap');
     expect(explicit.isDark).toBe(true);
+
+    const explicitLegacy = getAmbientLightGrade(300, 'Gelap Malam');
+    expect(explicitLegacy.status).toBe('Gelap Malam');
+    expect(explicitLegacy.isDark).toBe(true);
   });
 });
 

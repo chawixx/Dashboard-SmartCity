@@ -437,8 +437,8 @@ describe('LDR Ambient Light Sensor & Lighting Mode Parser (PRD / Contract Update
       mq135_adc_mv: 580,
       mq135_sensor_mv: 966.7,
       wifi_rssi_dbm: -55,
-      ldr_raw: 2850,
-      ambient_light: 'Gelap Malam',
+      ldr_raw: 750,
+      ambient_light: 'Gelap',
       is_dark: true,
       lighting_mode: 'auto',
     });
@@ -446,8 +446,8 @@ describe('LDR Ambient Light Sensor & Lighting Mode Parser (PRD / Contract Update
     const result = parseTelemetryPayload(payload);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.ldr_raw).toBe(2850);
-      expect(result.data.ambient_light).toBe('Gelap Malam');
+      expect(result.data.ldr_raw).toBe(750);
+      expect(result.data.ambient_light).toBe('Gelap');
       expect(result.data.is_dark).toBe(true);
       expect(result.data.lighting_mode).toBe('auto');
     }

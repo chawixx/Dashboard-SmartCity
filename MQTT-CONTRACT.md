@@ -101,8 +101,8 @@ aethersense/{device_id}/telemetry
   "flood_status": "Aman",
   "is_flood_warning": false,
   "wifi_rssi_dbm": -54,
-  "ldr_raw": 1200,
-  "ambient_light": "Terang Siang",
+  "ldr_raw": 320,
+  "ambient_light": "Terang",
   "is_dark": false,
   "lighting_mode": "auto",
   "relays": {
@@ -141,8 +141,8 @@ aethersense/{device_id}/telemetry
 | `flood_status` | `string` (opt)| — | `Aman`, `Waspada`, `Siaga`, `Bahaya Banjir` | River flood risk classification. |
 | `is_flood_warning` | `boolean` (opt)| — | `true` / `false` | Critical flood risk indicator. |
 | `ldr_raw` | `number` (opt)| ADC count | $0 \dots 4095$ | Raw 12-bit analog reading from LDR Sensor (Pin 9 ADC1, lower = brighter). |
-| `ambient_light` | `string` (opt)| — | `Terang Siang`, `Redup / Mendung`, `Gelap Malam` | Human-readable ambient lighting classification. |
-| `is_dark` | `boolean` (opt)| — | `true` / `false` | Flag kondisi gelap untuk pemicu otomatis relay lampu. |
+| `ambient_light` | `string` (opt)| — | `Terang` (<500 ADC), `Gelap` (>500 ADC) | Human-readable ambient lighting classification (2 kondisi: <500 mati/terang, >500 menyala/gelap). |
+| `is_dark` | `boolean` (opt)| — | `true` (>500 ADC) / `false` (<=500 ADC) | Flag kondisi gelap untuk pemicu otomatis relay lampu (Menyala jika true). |
 | `lighting_mode` | `string` (opt)| — | `auto` / `manual` | Mode operasi penerangan kota (Auto LDR vs Manual Web). |
 | `wifi_rssi_dbm` | `number` | dBm | $-100 \dots 0$ | Wi-Fi Received Signal Strength Indicator. |
 | `relays` | `object` (opt)| — | `{ relay1..4: boolean }` | Status aktif/padam seluruh 4 kanal relay LED kota. |
