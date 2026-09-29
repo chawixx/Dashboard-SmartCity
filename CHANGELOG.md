@@ -176,7 +176,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **LDR Ambient Light Sensor & Dual-Mode Lighting Control (Auto vs Manual):**
   - Integrated LDR Light Dependent Resistor on **GPIO 9 (ADC1 Channel 8)** on ESP32-S3.
   - Implemented dual-mode lighting control engine:
-    - **Mode Otomatis (Auto LDR):** Evaluates ambient light using binary 500 ADC threshold (`< 500` Terang/Padam, `> 500` Gelap/Menyala). Automatically energizes all 4 sector relays when dark (`> 500`), and de-energizes them when bright (`< 500`).
+    - **Mode Otomatis (Auto LDR):** Evaluates ambient light using binary 3000 ADC threshold (`< 3000` Terang/Padam, `> 3000` Gelap/Menyala). Automatically energizes all 4 sector relays when dark (`> 3000`), and de-energizes them when bright (`< 3000`).
     - **Mode Manual (Operator Web):** Bypasses LDR automation, allowing web dashboard operators to freely toggle individual sectors via tactile relay buttons.
   - Added interactive Segmented Mode Switcher & Real-time LDR Ambient Light Gauge in `SectorLightingControlSection.tsx` with dynamic Sun/Moon icons, brightness percentage, and active rule notice.
   - Added Intensitas Cahaya Ambien (LDR Sensor) row (#06) to `TelemetryMatrixSection.tsx`.

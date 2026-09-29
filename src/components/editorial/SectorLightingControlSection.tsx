@@ -321,7 +321,7 @@ export function SectorLightingControlSection({
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--ink-soft)' }}>
             <span>Pin: <code style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--ink)' }}>GPIO 9 (ADC1)</code></span>
-            <span>Threshold: <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink)' }}>&gt;500 Menyala | &lt;500 Mati</code></span>
+            <span>Threshold: <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--ink)' }}>&gt;3000 Menyala | &lt;3000 Mati</code></span>
           </div>
         </div>
       </div>

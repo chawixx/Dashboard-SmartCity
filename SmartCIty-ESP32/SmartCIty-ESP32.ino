@@ -20,11 +20,11 @@ const float MAX_RIVER_DEPTH_CM = 30.0f;
 // LDR LIGHT SENSOR CONFIGURATION (AUTO LIGHTING)
 // GPIO 9 (ADC1 Channel 8 pada ESP32-S3)
 // 2 Kondisi Ambien:
-// < 500 : Terang / Mati (banyak cahaya terbaca sensor)
-// > 500 : Menyala / Gelap (sedikit cahaya terbaca sensor)
+// < 3000 : Terang / Mati (banyak cahaya terbaca sensor)
+// > 3000 : Menyala / Gelap (sedikit cahaya terbaca sensor)
 // ============================================================
 #define LDR_PIN 9
-const uint16_t LDR_THRESHOLD = 500;
+const uint16_t LDR_THRESHOLD = 3000;
 
 // ============================================================
 // 4-CHANNEL RELAY ACTUATOR CONFIGURATION (SECTOR LIGHTING)
@@ -161,8 +161,8 @@ float waterLevelCm = 0.0f;
 String floodStatus = "Aman";
 bool isFloodWarning = false;
 
-// LDR Ambient Light Variables (2 Kondisi: < 500 Mati / Terang, > 500 Menyala / Gelap)
-uint16_t ldrRaw = 300;
+// LDR Ambient Light Variables (2 Kondisi: < 3000 Mati / Terang, > 3000 Menyala / Gelap)
+uint16_t ldrRaw = 1200;
 String ambientLight = "Terang";
 bool isDark = false;
 
@@ -689,8 +689,8 @@ void readLDR() {
     ldrRaw = rawSum / samples;
 
     // Evaluasi 2 kondisi ambien:
-    // < 500 : Terang / Mati (banyak cahaya terbaca sensor)
-    // > 500 : Menyala / Gelap (sedikit cahaya terbaca sensor)
+    // < 3000 : Terang / Mati (banyak cahaya terbaca sensor)
+    // > 3000 : Menyala / Gelap (sedikit cahaya terbaca sensor)
     if (ldrRaw > LDR_THRESHOLD) {
         isDark = true;
         ambientLight = "Gelap";
@@ -702,15 +702,15 @@ void readLDR() {
     // Jika Mode OTOMATIS aktif, kendalikan relay berdasarkan kondisi LDR
     if (lightingMode.equalsIgnoreCase("auto")) {
         if (isDark) {
-            // Ambien Gelap (>500 ADC) -> Sedikit cahaya terbaca sensor -> Menyalakan semua sektor penerangan
+            // Ambien Gelap (>3000 ADC) -> Sedikit cahaya terbaca sensor -> Menyalakan semua sektor penerangan
             if (!relay1State || !relay2State || !relay3State || !relay4State) {
-                Serial.println("[AUTO LDR] Ambien Gelap (>500 ADC) -> Menyalakan semua sektor penerangan (LED ON)");
+                Serial.println("[AUTO LDR] Ambien Gelap (>3000 ADC) -> Menyalakan semua sektor penerangan (LED ON)");
                 setAllRelays(true);
             }
         } else {
-            // Ambien Terang (<500 ADC) -> Banyak cahaya terbaca sensor -> Memadamkan semua sektor penerangan
+            // Ambien Terang (<3000 ADC) -> Banyak cahaya terbaca sensor -> Memadamkan semua sektor penerangan
             if (relay1State || relay2State || relay3State || relay4State) {
-                Serial.println("[AUTO LDR] Ambien Terang (<500 ADC) -> Memadamkan semua sektor penerangan (LED OFF)");
+                Serial.println("[AUTO LDR] Ambien Terang (<3000 ADC) -> Memadamkan semua sektor penerangan (LED OFF)");
                 setAllRelays(false);
             }
         }

@@ -44,26 +44,26 @@ describe('Telemetry Formatters (PRD Section 12)', () => {
     expect(explicitGrade.isPolluted).toBe(true);
   });
 
-  it('classifies ambient light grades accurately across bright (<500) and dark (>500) states', () => {
-    // Terang (< 500 ADC) -> Banyak cahaya -> Lampu Mati
-    const bright = getAmbientLightGrade(300);
+  it('classifies ambient light grades accurately across bright (<3000) and dark (>3000) states', () => {
+    // Terang (< 3000 ADC) -> Banyak cahaya -> Lampu Mati
+    const bright = getAmbientLightGrade(1200);
     expect(bright.status).toBe('Terang');
     expect(bright.isDark).toBe(false);
     expect(bright.badgeText).toBe('TERANG (MATI)');
     expect(bright.percent).toBeGreaterThan(60);
 
-    // Gelap (> 500 ADC) -> Sedikit cahaya -> Lampu Menyala
-    const dark = getAmbientLightGrade(750);
+    // Gelap (> 3000 ADC) -> Sedikit cahaya -> Lampu Menyala
+    const dark = getAmbientLightGrade(3400);
     expect(dark.status).toBe('Gelap');
     expect(dark.isDark).toBe(true);
     expect(dark.badgeText).toBe('GELAP (MENYALA)');
 
     // Explicit status override
-    const explicit = getAmbientLightGrade(300, 'Gelap');
+    const explicit = getAmbientLightGrade(1200, 'Gelap');
     expect(explicit.status).toBe('Gelap');
     expect(explicit.isDark).toBe(true);
 
-    const explicitLegacy = getAmbientLightGrade(300, 'Gelap Malam');
+    const explicitLegacy = getAmbientLightGrade(1200, 'Gelap Malam');
     expect(explicitLegacy.status).toBe('Gelap Malam');
     expect(explicitLegacy.isDark).toBe(true);
   });

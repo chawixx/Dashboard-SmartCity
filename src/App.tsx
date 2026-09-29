@@ -290,7 +290,7 @@ export default function App() {
       water_level_cm: 4.6,
       flood_status: 'Aman',
       is_flood_warning: false,
-      ldr_raw: 280,
+      ldr_raw: 1200,
       ambient_light: 'Terang',
       is_dark: false,
       lighting_mode: lightingMode,
@@ -319,7 +319,7 @@ export default function App() {
       const isPollutedSample = i % 5 === 4;
       const mqSample = isPollutedSample ? 3400 : Math.floor(500 + (i % 4) * 300);
       const isDarkSample = i % 3 === 2;
-      const ldrSample = isDarkSample ? 750 : 280;
+      const ldrSample = isDarkSample ? 3450 : 1200;
       const payload = JSON.stringify({
         device_id: simDeviceId,
         sequence: currentSeq,
@@ -384,7 +384,7 @@ export default function App() {
       water_level_cm: 4.6,
       flood_status: 'Aman',
       is_flood_warning: false,
-      ldr_raw: 280,
+      ldr_raw: 1200,
       ambient_light: 'Terang',
       is_dark: false,
       lighting_mode: lightingMode,
@@ -419,7 +419,7 @@ export default function App() {
       water_level_cm: 4.6,
       flood_status: 'Aman',
       is_flood_warning: false,
-      ldr_raw: 280,
+      ldr_raw: 1200,
       ambient_light: 'Terang',
       is_dark: false,
       lighting_mode: lightingMode,

@@ -324,8 +324,8 @@ export interface AmbientLightGrade {
 
 /**
  * Evaluates LDR sensor reading into 2 binary conditions:
- * < 500: Terang / Mati (banyak cahaya terbaca sensor)
- * > 500: Menyala / Gelap (sedikit cahaya terbaca sensor)
+ * < 3000: Terang / Mati (banyak cahaya terbaca sensor)
+ * > 3000: Menyala / Gelap (sedikit cahaya terbaca sensor)
  */
 export function getAmbientLightGrade(
   raw?: number | null,
@@ -333,7 +333,7 @@ export function getAmbientLightGrade(
 ): AmbientLightGrade {
   if (explicitStatus) {
     if (explicitStatus.includes('Gelap') || explicitStatus.includes('Menyala')) {
-      const clampedRaw = raw !== null && raw !== undefined ? Math.max(0, Math.min(4095, raw)) : 3000;
+      const clampedRaw = raw !== null && raw !== undefined ? Math.max(0, Math.min(4095, raw)) : 3500;
       const brightnessPercent = Math.max(0, Math.min(100, Math.round(((4095 - clampedRaw) / 4095) * 100)));
       return {
         status: explicitStatus,
@@ -342,13 +342,13 @@ export function getAmbientLightGrade(
         color: '#818cf8',
         bgColor: 'rgba(99, 102, 241, 0.15)',
         borderColor: 'rgba(99, 102, 241, 0.40)',
-        description: 'Sedikit cahaya terbaca sensor (>500 ADC). Mode Auto menyalakan lampu.',
+        description: 'Sedikit cahaya terbaca sensor (>3000 ADC). Mode Auto menyalakan lampu.',
         isDark: true,
         percent: brightnessPercent,
       };
     }
     if (explicitStatus.includes('Terang') || explicitStatus.includes('Mati')) {
-      const clampedRaw = raw !== null && raw !== undefined ? Math.max(0, Math.min(4095, raw)) : 300;
+      const clampedRaw = raw !== null && raw !== undefined ? Math.max(0, Math.min(4095, raw)) : 1200;
       const brightnessPercent = Math.max(0, Math.min(100, Math.round(((4095 - clampedRaw) / 4095) * 100)));
       return {
         status: explicitStatus,
@@ -357,7 +357,7 @@ export function getAmbientLightGrade(
         color: '#10b981',
         bgColor: 'rgba(16, 185, 129, 0.12)',
         borderColor: 'rgba(16, 185, 129, 0.35)',
-        description: 'Banyak cahaya terbaca sensor (<500 ADC). Mode Auto memadamkan lampu.',
+        description: 'Banyak cahaya terbaca sensor (<3000 ADC). Mode Auto memadamkan lampu.',
         isDark: false,
         percent: brightnessPercent,
       };
@@ -372,7 +372,7 @@ export function getAmbientLightGrade(
       color: '#10b981',
       bgColor: 'rgba(16, 185, 129, 0.12)',
       borderColor: 'rgba(16, 185, 129, 0.35)',
-      description: 'Banyak cahaya terbaca sensor (<500 ADC). Mode Auto memadamkan lampu.',
+      description: 'Banyak cahaya terbaca sensor (<3000 ADC). Mode Auto memadamkan lampu.',
       isDark: false,
       percent: 85,
     };
@@ -382,9 +382,9 @@ export function getAmbientLightGrade(
   const brightnessPercent = Math.max(0, Math.min(100, Math.round(((4095 - clampedRaw) / 4095) * 100)));
 
   // Binary LDR Threshold:
-  // > 500 : Menyala (sedikit cahaya terbaca sensor)
-  // < 500 : Mati (banyak cahaya terbaca sensor)
-  if (clampedRaw > 500) {
+  // > 3000 : Menyala (sedikit cahaya terbaca sensor)
+  // < 3000 : Mati (banyak cahaya terbaca sensor)
+  if (clampedRaw > 3000) {
     return {
       status: 'Gelap',
       label: 'Gelap (Lampu Menyala)',
@@ -392,7 +392,7 @@ export function getAmbientLightGrade(
       color: '#818cf8',
       bgColor: 'rgba(99, 102, 241, 0.15)',
       borderColor: 'rgba(99, 102, 241, 0.40)',
-      description: 'Sedikit cahaya terbaca sensor (>500 ADC). Mode Auto menyalakan lampu.',
+      description: 'Sedikit cahaya terbaca sensor (>3000 ADC). Mode Auto menyalakan lampu.',
       isDark: true,
       percent: brightnessPercent,
     };
@@ -405,7 +405,7 @@ export function getAmbientLightGrade(
     color: '#10b981',
     bgColor: 'rgba(16, 185, 129, 0.12)',
     borderColor: 'rgba(16, 185, 129, 0.35)',
-    description: 'Banyak cahaya terbaca sensor (<500 ADC). Mode Auto memadamkan lampu.',
+    description: 'Banyak cahaya terbaca sensor (<3000 ADC). Mode Auto memadamkan lampu.',
     isDark: false,
     percent: brightnessPercent,
   };
