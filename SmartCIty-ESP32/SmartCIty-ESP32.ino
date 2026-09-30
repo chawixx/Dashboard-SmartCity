@@ -766,6 +766,8 @@ void readLDR() {
             }
         }
     }
+}
+
 // ============================================================
 // SMART PARKING SYSTEM ENGINE (2x IR + 2x SERVO + 10 SLOTS)
 // Non-blocking state machine dengan edge detection & anti-flapping
