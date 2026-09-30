@@ -211,6 +211,36 @@ export function parseTelemetryPayload(
     }
   }
 
+  if (obj.parking_total_slots !== undefined) {
+    if (!isValidNumber(obj.parking_total_slots, TELEMETRY_LIMITS.parking_total_slots.min, TELEMETRY_LIMITS.parking_total_slots.max)) {
+      return {
+        success: false,
+        error: `Invalid "parking_total_slots": ${obj.parking_total_slots} (expected ${TELEMETRY_LIMITS.parking_total_slots.min}..${TELEMETRY_LIMITS.parking_total_slots.max})`,
+        rawPayload: raw,
+      };
+    }
+  }
+
+  if (obj.parking_occupied_slots !== undefined) {
+    if (!isValidNumber(obj.parking_occupied_slots, TELEMETRY_LIMITS.parking_occupied_slots.min, TELEMETRY_LIMITS.parking_occupied_slots.max)) {
+      return {
+        success: false,
+        error: `Invalid "parking_occupied_slots": ${obj.parking_occupied_slots} (expected ${TELEMETRY_LIMITS.parking_occupied_slots.min}..${TELEMETRY_LIMITS.parking_occupied_slots.max})`,
+        rawPayload: raw,
+      };
+    }
+  }
+
+  if (obj.parking_available_slots !== undefined) {
+    if (!isValidNumber(obj.parking_available_slots, TELEMETRY_LIMITS.parking_available_slots.min, TELEMETRY_LIMITS.parking_available_slots.max)) {
+      return {
+        success: false,
+        error: `Invalid "parking_available_slots": ${obj.parking_available_slots} (expected ${TELEMETRY_LIMITS.parking_available_slots.min}..${TELEMETRY_LIMITS.parking_available_slots.max})`,
+        rawPayload: raw,
+      };
+    }
+  }
+
   // Construct typed and clean TelemetryData object
   const validTelemetry: TelemetryData = {
     device_id: deviceId,
@@ -309,6 +339,89 @@ export function parseTelemetryPayload(
     validTelemetry.relay2 = parsedRelays.relay2;
     validTelemetry.relay3 = parsedRelays.relay3;
     validTelemetry.relay4 = parsedRelays.relay4;
+  }
+
+  // Parse Smart Parking Attributes (supporting both flat fields and nested parking object)
+  let totalSlots = 10;
+  let occupiedSlots = 0;
+  let hasParkingData = false;
+  let nestedParking: Record<string, unknown> | null = null;
+
+  if (obj.parking && typeof obj.parking === 'object' && !Array.isArray(obj.parking)) {
+    nestedParking = obj.parking as Record<string, unknown>;
+    if (typeof nestedParking.total_slots === 'number') { totalSlots = Math.floor(nestedParking.total_slots); hasParkingData = true; }
+    else if (typeof nestedParking.total === 'number') { totalSlots = Math.floor(nestedParking.total); hasParkingData = true; }
+    if (typeof nestedParking.occupied_slots === 'number') { occupiedSlots = Math.floor(nestedParking.occupied_slots); hasParkingData = true; }
+    else if (typeof nestedParking.occupied === 'number') { occupiedSlots = Math.floor(nestedParking.occupied); hasParkingData = true; }
+  }
+
+  if (typeof obj.parking_total_slots === 'number') {
+    totalSlots = Math.floor(obj.parking_total_slots);
+    hasParkingData = true;
+  }
+  if (typeof obj.parking_occupied_slots === 'number') {
+    occupiedSlots = Math.floor(obj.parking_occupied_slots);
+    hasParkingData = true;
+  }
+
+  if (hasParkingData) {
+    occupiedSlots = Math.max(0, Math.min(totalSlots, occupiedSlots));
+    let availableSlots = totalSlots - occupiedSlots;
+    if (typeof obj.parking_available_slots === 'number') {
+      availableSlots = Math.floor(obj.parking_available_slots);
+    } else if (nestedParking && typeof nestedParking.available_slots === 'number') {
+      availableSlots = Math.floor(nestedParking.available_slots);
+    }
+
+    const isFull = typeof obj.is_parking_full === 'boolean'
+      ? obj.is_parking_full
+      : nestedParking && typeof nestedParking.is_full === 'boolean'
+        ? nestedParking.is_full
+        : (occupiedSlots >= totalSlots);
+
+    const entryGateOpen = typeof obj.entry_gate_open === 'boolean'
+      ? obj.entry_gate_open
+      : nestedParking && typeof nestedParking.entry_gate_open === 'boolean'
+        ? nestedParking.entry_gate_open
+        : false;
+
+    const exitGateOpen = typeof obj.exit_gate_open === 'boolean'
+      ? obj.exit_gate_open
+      : nestedParking && typeof nestedParking.exit_gate_open === 'boolean'
+        ? nestedParking.exit_gate_open
+        : false;
+
+    const irEntryDetected = typeof obj.ir_entry_detected === 'boolean'
+      ? obj.ir_entry_detected
+      : nestedParking && typeof nestedParking.ir_entry_detected === 'boolean'
+        ? nestedParking.ir_entry_detected
+        : false;
+
+    const irExitDetected = typeof obj.ir_exit_detected === 'boolean'
+      ? obj.ir_exit_detected
+      : nestedParking && typeof nestedParking.ir_exit_detected === 'boolean'
+        ? nestedParking.ir_exit_detected
+        : false;
+
+    validTelemetry.parking_total_slots = totalSlots;
+    validTelemetry.parking_occupied_slots = occupiedSlots;
+    validTelemetry.parking_available_slots = availableSlots;
+    validTelemetry.is_parking_full = isFull;
+    validTelemetry.entry_gate_open = entryGateOpen;
+    validTelemetry.exit_gate_open = exitGateOpen;
+    validTelemetry.ir_entry_detected = irEntryDetected;
+    validTelemetry.ir_exit_detected = irExitDetected;
+
+    validTelemetry.parking = {
+      total_slots: totalSlots,
+      occupied_slots: occupiedSlots,
+      available_slots: availableSlots,
+      is_full: isFull,
+      entry_gate_open: entryGateOpen,
+      exit_gate_open: exitGateOpen,
+      ir_entry_detected: irEntryDetected,
+      ir_exit_detected: irExitDetected,
+    };
   }
 
   return {

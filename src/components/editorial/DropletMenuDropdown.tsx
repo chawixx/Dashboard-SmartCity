@@ -9,6 +9,7 @@ import {
   Radio,
   Sparkles,
   Lightbulb,
+  Car,
 } from 'lucide-react';
 
 interface DropletMenuDropdownProps {
@@ -87,6 +88,14 @@ export function DropletMenuDropdown({
     },
     {
       num: '03',
+      label: 'Smart Parking 10 Slot',
+      desc: 'Monitoring gerbang otomatis & kapasitas lahan kosong',
+      href: '#smart-parking',
+      tag: 'Mobility',
+      icon: <Car size={16} style={{ color: '#10b981' }} />,
+    },
+    {
+      num: '04',
       label: 'Analisis Mikroklimat',
       desc: 'Grafik tren suhu, kelembapan & korelasi pesisir',
       href: '#analytics',
@@ -94,7 +103,7 @@ export function DropletMenuDropdown({
       icon: <BarChart3 size={16} style={{ color: '#38bdf8' }} />,
     },
     {
-      num: '03',
+      num: '05',
       label: 'Kawasan Observasi',
       desc: '3D spatial deck Rumput, Pancasila & Masjid Agung',
       href: '#zones',
@@ -102,7 +111,7 @@ export function DropletMenuDropdown({
       icon: <Layers size={16} style={{ color: '#0ea5e9' }} />,
     },
     {
-      num: '04',
+      num: '06',
       label: 'Statistik Jaringan',
       desc: 'Metrik paket, latensi sinyal & uptime ESP32',
       href: '#stats',
@@ -110,7 +119,7 @@ export function DropletMenuDropdown({
       icon: <Compass size={16} style={{ color: '#10b981' }} />,
     },
     {
-      num: '05',
+      num: '07',
       label: 'Catatan Lapangan',
       desc: 'Observasi empiris lingkungan pesisir Alun-Alun',
       href: '#logs',
@@ -118,7 +127,7 @@ export function DropletMenuDropdown({
       icon: <FileText size={16} style={{ color: '#f59e0b' }} />,
     },
     {
-      num: '06',
+      num: '08',
       label: 'Informasi & Kontak',
       desc: 'Arsitektur observatorium & spesifikasi node',
       href: '#footer',

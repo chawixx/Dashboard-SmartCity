@@ -14,6 +14,7 @@ import { HeroSection } from './components/editorial/HeroSection';
 import { ZoneTrustSection } from './components/editorial/ZoneTrustSection';
 import { TelemetryMatrixSection } from './components/editorial/TelemetryMatrixSection';
 import { SectorLightingControlSection } from './components/editorial/SectorLightingControlSection';
+import { SmartParkingSection } from './components/editorial/SmartParkingSection';
 import { FacilitiesAnalyticsSection } from './components/editorial/FacilitiesAnalyticsSection';
 import { StatsSection } from './components/editorial/StatsSection';
 import { FieldLogsSection } from './components/editorial/FieldLogsSection';
@@ -268,6 +269,15 @@ export default function App() {
     publish(simCommandTopic, payload);
   };
 
+  const handleResetParking = () => {
+    const payload = JSON.stringify({
+      type: 'parking_reset',
+      occupied: 0,
+      timestamp: Math.floor(Date.now() / 1000),
+    });
+    publish(simCommandTopic, payload);
+  };
+
   // Simulation publisher helpers for verification & demonstration
   const handleSendNormalTelemetry = () => {
     const mqVal = Math.floor(750 + (Math.random() * 200 - 100));
@@ -294,6 +304,14 @@ export default function App() {
       ambient_light: 'Terang',
       is_dark: false,
       lighting_mode: lightingMode,
+      parking_total_slots: 10,
+      parking_occupied_slots: 3,
+      parking_available_slots: 7,
+      is_parking_full: false,
+      entry_gate_open: false,
+      exit_gate_open: false,
+      ir_entry_detected: false,
+      ir_exit_detected: false,
       wifi_rssi_dbm: Math.floor(-56 + (Math.random() * 10 - 5)),
       relays: relayStates,
       relay1: relayStates.relay1,
@@ -320,6 +338,9 @@ export default function App() {
       const mqSample = isPollutedSample ? 3400 : Math.floor(500 + (i % 4) * 300);
       const isDarkSample = i % 3 === 2;
       const ldrSample = isDarkSample ? 3450 : 1200;
+      const occSample = Math.min(10, Math.max(0, (i * 2) % 11));
+      const availSample = 10 - occSample;
+      const isFullSample = occSample >= 10;
       const payload = JSON.stringify({
         device_id: simDeviceId,
         sequence: currentSeq,
@@ -343,6 +364,14 @@ export default function App() {
         ambient_light: isDarkSample ? 'Gelap' : 'Terang',
         is_dark: isDarkSample,
         lighting_mode: lightingMode,
+        parking_total_slots: 10,
+        parking_occupied_slots: occSample,
+        parking_available_slots: availSample,
+        is_parking_full: isFullSample,
+        entry_gate_open: i % 4 === 1,
+        exit_gate_open: i % 4 === 3,
+        ir_entry_detected: i % 4 === 1,
+        ir_exit_detected: i % 4 === 3,
         wifi_rssi_dbm: Math.floor(-54 - (i % 3) * 2),
         relays: relayStates,
         relay1: relayStates.relay1,
@@ -388,6 +417,14 @@ export default function App() {
       ambient_light: 'Terang',
       is_dark: false,
       lighting_mode: lightingMode,
+      parking_total_slots: 10,
+      parking_occupied_slots: 4,
+      parking_available_slots: 6,
+      is_parking_full: false,
+      entry_gate_open: false,
+      exit_gate_open: false,
+      ir_entry_detected: false,
+      ir_exit_detected: false,
       wifi_rssi_dbm: -55,
       relays: relayStates,
       relay1: relayStates.relay1,
@@ -423,6 +460,14 @@ export default function App() {
       ambient_light: 'Terang',
       is_dark: false,
       lighting_mode: lightingMode,
+      parking_total_slots: 10,
+      parking_occupied_slots: 4,
+      parking_available_slots: 6,
+      is_parking_full: false,
+      entry_gate_open: false,
+      exit_gate_open: false,
+      ir_entry_detected: false,
+      ir_exit_detected: false,
       wifi_rssi_dbm: -58,
       relays: relayStates,
       relay1: relayStates.relay1,
@@ -488,7 +533,15 @@ export default function App() {
           isMqttConnected={connectionState === 'CONNECTED'}
         />
 
-        {/* Section 04: Microclimate Facilities & SVG Waveform Analytics */}
+        {/* Section 04: Smart Parking 10-Slot & Dual-Gate Optical Barrier System */}
+        <SmartParkingSection
+          telemetry={telemetry}
+          targetDeviceId={activeDeviceId}
+          isMqttConnected={connectionState === 'CONNECTED'}
+          onResetParking={handleResetParking}
+        />
+
+        {/* Section 05: Microclimate Facilities & SVG Waveform Analytics */}
         <FacilitiesAnalyticsSection
           history={history}
           telemetry={telemetry}

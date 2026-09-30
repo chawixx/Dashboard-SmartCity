@@ -82,6 +82,16 @@ export function TelemetryMatrixSection({
     },
     {
       index: '07',
+      title: 'Kapasitas Lahan Parkir (Smart Parking 10 Slot)',
+      value: telemetry?.parking_available_slots !== undefined
+        ? `${telemetry.parking_available_slots} / ${telemetry.parking_total_slots ?? 10} Slot Bebas (${telemetry.is_parking_full ? 'PENUH' : 'TERSEDIA'})`
+        : '10 / 10 Slot Bebas (TERSEDIA)',
+      description: 'Penghitungan kapasitas slot kosong kawasan parkir Alun-Alun berbasis 2 sensor infrared dan kendali otomatis 2 motor servo palang gerbang.',
+      anchor: '#smart-parking',
+      highlightColor: telemetry?.is_parking_full ? '#f43f5e' : 'var(--state-online)',
+    },
+    {
+      index: '08',
       title: 'Kekuatan Sinyal & Uptime (ESP32-S3)',
       value: telemetry ? `${telemetry.wifi_rssi_dbm} dBm · Up ${formattedUptime}` : '-- dBm',
       description: 'Kekuatan sinyal Wi-Fi transceiver ESP32-S3 dan jam uptime pemrosesan telemetri.',

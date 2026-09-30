@@ -189,5 +189,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resolved critical issue where transient DHT22 read errors or loose sensor cables completely blocked `publishTelemetry()`.
   - `readSensors()` is now non-blocking and fault-tolerant: failure of one sensor preserves previous readings and allows remaining sensors (MQ-135, Rain, Ultrasonic, LDR) to be transmitted without interruption.
 
+---
+
+## [0.5.0] - 2026-09-30
+
+### Added
+- **Smart Parking System (10 Slots & Dual-Gate Optical Barrier):**
+  - Integrated 2 Infrared (IR) obstacle sensors on ESP32-S3:
+    - **GPIO 1:** Sensor IR Masuk (Entry IR Obstacle, `INPUT_PULLUP`).
+    - **GPIO 2:** Sensor IR Keluar (Exit IR Obstacle, `INPUT_PULLUP`).
+  - Integrated 2 SG90 Servo Motors via `ESP32Servo` library:
+    - **GPIO 21:** Palang Servo Masuk (Entry Barrier Gate PWM, 0° Closed / 90° Open).
+    - **GPIO 47:** Palang Servo Keluar (Exit Barrier Gate PWM, 0° Closed / 90° Open).
+  - Implemented non-blocking edge-detection state machine in firmware (`handleParkingSystem()`):
+    - Autonomous entry gate opening on vehicle detection, with capacity lock when full (10/10 slots).
+    - Autonomous exit gate opening on exiting vehicle detection.
+    - 1500ms safety vehicle transit debounce delay (`GATE_PASS_TIMEOUT_MS`) before lowering gates to 0°.
+    - Immediate MQTT telemetry broadcast on every slot increment / decrement.
+  - Implemented `parking_reset` command listener in firmware to calibrate/reset occupied slots to 0.
+  - Designed and built interactive `SmartParkingSection.tsx`:
+    - Real-time vacancy metrics (Kapasitas Total 10, Terisi, Kosong, Okupansi %).
+    - Dual optical gate telemetry monitors (Entry Gate & Exit Gate status and IR detection beam indicators).
+    - Interactive 10-bay visual parking slot grid (`P-01` through `P-10`) with occupied/available badges.
+    - Dedicated tactile "↺ Reset Kuota Parkir" button for manual testing and calibration.
+  - Added "Kapasitas Lahan Parkir" telemetry parameter row (#07) to `TelemetryMatrixSection.tsx`.
+  - Added `#smart-parking` navigation anchor to `SiteHeader.tsx` and quick access menu item with `Car` icon to `DropletMenuDropdown.tsx`.
+  - Implemented `getParkingStatusGrade` formatter (`Tersedia`, `Hampir Penuh`, `Penuh`).
+  - Added parking telemetry schema validation and normalization in `src/mqtt/parser.ts`.
+  - Expanded unit test coverage in `parser.test.ts` and `store.test.ts` (60/60 tests passing).
+  - Documented complete Smart Parking protocol, pinouts, and commands in `MQTT-CONTRACT.md` (Section 8).
+
+
 
 

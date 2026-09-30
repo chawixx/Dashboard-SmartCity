@@ -2,6 +2,7 @@
 #include <PubSubClient.h>
 #include <DHT.h>
 #include <time.h>
+#include <ESP32Servo.h>
 
 // ============================================================
 // SENSOR CONFIGURATION
@@ -25,6 +26,20 @@ const float MAX_RIVER_DEPTH_CM = 30.0f;
 // ============================================================
 #define LDR_PIN 9
 const uint16_t LDR_THRESHOLD = 3000;
+
+// ============================================================
+// SMART PARKING SYSTEM CONFIGURATION (10 SLOTS)
+// IR Sensors: Active LOW (LOW saat mendeteksi mobil, HIGH saat kosong)
+// Servos: 0 deg = Palang Tutup (Closed), 90 deg = Palang Buka (Open)
+// ============================================================
+#define IR_ENTRY_PIN 1
+#define IR_EXIT_PIN 2
+#define SERVO_ENTRY_PIN 21
+#define SERVO_EXIT_PIN 47
+
+const int SERVO_CLOSED_ANGLE = 0;
+const int SERVO_OPEN_ANGLE = 90;
+const unsigned long GATE_PASS_TIMEOUT_MS = 1500; // Waktu jeda aman mobil lewat sebelum palang turun
 
 // ============================================================
 // 4-CHANNEL RELAY ACTUATOR CONFIGURATION (SECTOR LIGHTING)
@@ -124,10 +139,13 @@ const float MQ135_R2 = 15000.0f;
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 DHT dht(DHT_PIN, DHT_TYPE);
+Servo servoEntry;
+Servo servoExit;
 
 // Forward declaration
 void publishTelemetry();
 void readLDR();
+void handleParkingSystem();
 
 // ============================================================
 // STATE
@@ -165,6 +183,29 @@ bool isFloodWarning = false;
 uint16_t ldrRaw = 1200;
 String ambientLight = "Terang";
 bool isDark = false;
+
+// Smart Parking System Variables (10 Slots Kapasitas)
+const int TOTAL_PARKING_SLOTS = 10;
+int occupiedParkingSlots = 0;
+int availableParkingSlots = 10;
+bool isParkingFull = false;
+
+bool isIrEntryDetected = false;
+bool isIrExitDetected = false;
+bool isEntryGateOpen = false;
+bool isExitGateOpen = false;
+
+enum ParkingGateState {
+    PARK_IDLE,
+    PARK_WAIT_PASS,
+    PARK_CLOSING
+};
+
+ParkingGateState entryGateState = PARK_IDLE;
+ParkingGateState exitGateState = PARK_IDLE;
+
+unsigned long entryClearTime = 0;
+unsigned long exitClearTime = 0;
 
 // Lighting Control Mode: "auto" (Sensor LDR) atau "manual" (Web Dashboard)
 String lightingMode = "auto";
@@ -280,8 +321,18 @@ void handleMqttMessage(char* topic, byte* payload, unsigned int length) {
     String strMsg = String(message);
     strMsg.trim();
 
+    // Smart Parking Slot Reset Command: {"type": "parking_reset", "occupied": 0} or PARKING_RESET
+    if (strMsg.indexOf("\"parking_reset\"") >= 0 ||
+        strMsg.indexOf("parking_reset") >= 0 ||
+        strMsg.equalsIgnoreCase("PARKING_RESET") ||
+        strMsg.equalsIgnoreCase("RESET_PARKING")) {
+        occupiedParkingSlots = 0;
+        availableParkingSlots = TOTAL_PARKING_SLOTS;
+        isParkingFull = false;
+        Serial.println("[PARKING] Perintah RESET SLOT diterima. Kuota parkir kembali 10/10 kosong.");
+    }
     // 0. Lighting Mode Control: {"type": "lighting_mode", "mode": "auto" | "manual"} or {"action": "set_mode", "mode": ...}
-    if (strMsg.indexOf("\"lighting_mode\"") >= 0 || strMsg.indexOf("\"mode\"") >= 0) {
+    else if (strMsg.indexOf("\"lighting_mode\"") >= 0 || strMsg.indexOf("\"mode\"") >= 0) {
         if (strMsg.indexOf("\"auto\"") >= 0 || strMsg.indexOf("\"AUTO\"") >= 0) {
             lightingMode = "auto";
             Serial.println("[MODE] Beralih ke Mode OTOMATIS (Sensor LDR aktif)");
@@ -715,6 +766,138 @@ void readLDR() {
             }
         }
     }
+// ============================================================
+// SMART PARKING SYSTEM ENGINE (2x IR + 2x SERVO + 10 SLOTS)
+// Non-blocking state machine dengan edge detection & anti-flapping
+// ============================================================
+
+void handleParkingSystem() {
+    // Sensor IR: Active LOW (LOW = Terdeteksi mobil, HIGH = Bebas)
+    bool irEntryRaw = (digitalRead(IR_ENTRY_PIN) == LOW);
+    bool irExitRaw = (digitalRead(IR_EXIT_PIN) == LOW);
+
+    isIrEntryDetected = irEntryRaw;
+    isIrExitDetected = irExitRaw;
+
+    unsigned long now = millis();
+    bool stateChanged = false;
+
+    // --------------------------------------------------------
+    // PINTU MASUK (ENTRY GATE)
+    // --------------------------------------------------------
+    switch (entryGateState) {
+        case PARK_IDLE:
+            if (irEntryRaw) {
+                if (occupiedParkingSlots < TOTAL_PARKING_SLOTS) {
+                    servoEntry.write(SERVO_OPEN_ANGLE);
+                    isEntryGateOpen = true;
+                    entryGateState = PARK_WAIT_PASS;
+                    Serial.println("[PARKING] Mobil mendekati Pintu Masuk -> Palang DIBUKA (90°)");
+                    stateChanged = true;
+                } else {
+                    // Parkir Penuh -> Palang TETAP TUTUP (0°)
+                    if (isEntryGateOpen) {
+                        servoEntry.write(SERVO_CLOSED_ANGLE);
+                        isEntryGateOpen = false;
+                        stateChanged = true;
+                    }
+                    Serial.println("[PARKING] Peringatan: Mobil di Pintu Masuk tetapi PARKIR SUDAH PENUH (10/10)!");
+                }
+            }
+            break;
+
+        case PARK_WAIT_PASS:
+            // Kendaraan sedang melintas palang. Tunggu sensor IR kembali HIGH (badan mobil selesai lewat)
+            if (!irEntryRaw) {
+                entryClearTime = now;
+                entryGateState = PARK_CLOSING;
+            }
+            break;
+
+        case PARK_CLOSING:
+            // Jika mobil terhalang lagi sebelum palang turun, batalkan penutupan
+            if (irEntryRaw) {
+                entryGateState = PARK_WAIT_PASS;
+            } else if (now - entryClearTime >= GATE_PASS_TIMEOUT_MS) {
+                // Turunkan palang masuk
+                servoEntry.write(SERVO_CLOSED_ANGLE);
+                isEntryGateOpen = false;
+                entryGateState = PARK_IDLE;
+
+                if (occupiedParkingSlots < TOTAL_PARKING_SLOTS) {
+                    occupiedParkingSlots++;
+                }
+                availableParkingSlots = TOTAL_PARKING_SLOTS - occupiedParkingSlots;
+                isParkingFull = (occupiedParkingSlots >= TOTAL_PARKING_SLOTS);
+
+                Serial.print("[PARKING] Mobil masuk selesai -> Slot Terisi: ");
+                Serial.print(occupiedParkingSlots);
+                Serial.print("/");
+                Serial.println(TOTAL_PARKING_SLOTS);
+                stateChanged = true;
+            }
+            break;
+
+        default:
+            entryGateState = PARK_IDLE;
+            break;
+    }
+
+    // --------------------------------------------------------
+    // PINTU KELUAR (EXIT GATE)
+    // --------------------------------------------------------
+    switch (exitGateState) {
+        case PARK_IDLE:
+            if (irExitRaw) {
+                // Buka palang keluar
+                servoExit.write(SERVO_OPEN_ANGLE);
+                isExitGateOpen = true;
+                exitGateState = PARK_WAIT_PASS;
+                Serial.println("[PARKING] Mobil mendekati Pintu Keluar -> Palang DIBUKA (90°)");
+                stateChanged = true;
+            }
+            break;
+
+        case PARK_WAIT_PASS:
+            // Kendaraan sedang melintas keluar. Tunggu sensor IR kembali HIGH
+            if (!irExitRaw) {
+                exitClearTime = now;
+                exitGateState = PARK_CLOSING;
+            }
+            break;
+
+        case PARK_CLOSING:
+            if (irExitRaw) {
+                exitGateState = PARK_WAIT_PASS;
+            } else if (now - exitClearTime >= GATE_PASS_TIMEOUT_MS) {
+                // Turunkan palang keluar
+                servoExit.write(SERVO_CLOSED_ANGLE);
+                isExitGateOpen = false;
+                exitGateState = PARK_IDLE;
+
+                if (occupiedParkingSlots > 0) {
+                    occupiedParkingSlots--;
+                }
+                availableParkingSlots = TOTAL_PARKING_SLOTS - occupiedParkingSlots;
+                isParkingFull = (occupiedParkingSlots >= TOTAL_PARKING_SLOTS);
+
+                Serial.print("[PARKING] Mobil keluar selesai -> Sisa Slot Terisi: ");
+                Serial.print(occupiedParkingSlots);
+                Serial.print("/");
+                Serial.println(TOTAL_PARKING_SLOTS);
+                stateChanged = true;
+            }
+            break;
+
+        default:
+            exitGateState = PARK_IDLE;
+            break;
+    }
+
+    // Publish telemetri seketika bila terjadi transisi status palang atau slot
+    if (stateChanged && mqttClient.connected()) {
+        publishTelemetry();
+    }
 }
 
 // ============================================================
@@ -926,7 +1109,27 @@ void publishTelemetry() {
     payload += "\"relay1\":"; payload += relay1State ? "true" : "false"; payload += ",";
     payload += "\"relay2\":"; payload += relay2State ? "true" : "false"; payload += ",";
     payload += "\"relay3\":"; payload += relay3State ? "true" : "false"; payload += ",";
-    payload += "\"relay4\":"; payload += relay4State ? "true" : "false";
+    payload += "\"relay4\":"; payload += relay4State ? "true" : "false"; payload += ",";
+
+    // Smart Parking Telemetry (10 Slots Kapasitas)
+    payload += "\"parking_total_slots\":"; payload += String(TOTAL_PARKING_SLOTS); payload += ",";
+    payload += "\"parking_occupied_slots\":"; payload += String(occupiedParkingSlots); payload += ",";
+    payload += "\"parking_available_slots\":"; payload += String(availableParkingSlots); payload += ",";
+    payload += "\"is_parking_full\":"; payload += isParkingFull ? "true" : "false"; payload += ",";
+    payload += "\"entry_gate_open\":"; payload += isEntryGateOpen ? "true" : "false"; payload += ",";
+    payload += "\"exit_gate_open\":"; payload += isExitGateOpen ? "true" : "false"; payload += ",";
+    payload += "\"ir_entry_detected\":"; payload += isIrEntryDetected ? "true" : "false"; payload += ",";
+    payload += "\"ir_exit_detected\":"; payload += isIrExitDetected ? "true" : "false"; payload += ",";
+    payload += "\"parking\":{";
+    payload += "\"total_slots\":"; payload += String(TOTAL_PARKING_SLOTS); payload += ",";
+    payload += "\"occupied_slots\":"; payload += String(occupiedParkingSlots); payload += ",";
+    payload += "\"available_slots\":"; payload += String(availableParkingSlots); payload += ",";
+    payload += "\"is_full\":"; payload += isParkingFull ? "true" : "false"; payload += ",";
+    payload += "\"entry_gate_open\":"; payload += isEntryGateOpen ? "true" : "false"; payload += ",";
+    payload += "\"exit_gate_open\":"; payload += isExitGateOpen ? "true" : "false"; payload += ",";
+    payload += "\"ir_entry_detected\":"; payload += isIrEntryDetected ? "true" : "false"; payload += ",";
+    payload += "\"ir_exit_detected\":"; payload += isIrExitDetected ? "true" : "false";
+    payload += "}";
 
     payload += "}";
 
@@ -1087,6 +1290,26 @@ void setup() {
     digitalWrite(RELAY4_PIN, RELAY_INACTIVE_LEVEL);
 
     // --------------------------------------------------------
+    // SMART PARKING SYSTEM (2x IR SENSORS + 2x SERVOS)
+    // --------------------------------------------------------
+
+    pinMode(IR_ENTRY_PIN, INPUT_PULLUP);
+    pinMode(IR_EXIT_PIN, INPUT_PULLUP);
+
+    ESP32PWM::allocateTimer(0);
+    ESP32PWM::allocateTimer(1);
+    ESP32PWM::allocateTimer(2);
+    ESP32PWM::allocateTimer(3);
+
+    servoEntry.setPeriodHertz(50);
+    servoEntry.attach(SERVO_ENTRY_PIN, 500, 2400);
+    servoEntry.write(SERVO_CLOSED_ANGLE);
+
+    servoExit.setPeriodHertz(50);
+    servoExit.attach(SERVO_EXIT_PIN, 500, 2400);
+    servoExit.write(SERVO_CLOSED_ANGLE);
+
+    // --------------------------------------------------------
     // MQTT
     // --------------------------------------------------------
 
@@ -1126,6 +1349,12 @@ void setup() {
 // ============================================================
 
 void loop() {
+
+    // --------------------------------------------------------
+    // Smart Parking Automatic Gate Engine
+    // --------------------------------------------------------
+
+    handleParkingSystem();
 
     // --------------------------------------------------------
     // Maintain WiFi

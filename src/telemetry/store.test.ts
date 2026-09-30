@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TelemetryStore } from './store';
-import { formatUptime, getRssiQuality, getAirQualityGrade, getAmbientLightGrade } from './formatters';
+import {
+  formatUptime,
+  getRssiQuality,
+  getAirQualityGrade,
+  getAmbientLightGrade,
+  getParkingStatusGrade,
+} from './formatters';
 
 describe('Telemetry Formatters (PRD Section 12)', () => {
   it('formats seconds into exact HH:MM:SS format', () => {
@@ -66,6 +72,32 @@ describe('Telemetry Formatters (PRD Section 12)', () => {
     const explicitLegacy = getAmbientLightGrade(1200, 'Gelap Malam');
     expect(explicitLegacy.status).toBe('Gelap Malam');
     expect(explicitLegacy.isDark).toBe(true);
+  });
+
+  it('evaluates parking status grades across Tersedia, Hampir Penuh, and Penuh tiers', () => {
+    // 10/10 slots available -> Tersedia (0% occupied)
+    const available10 = getParkingStatusGrade(10, 10);
+    expect(available10.status).toBe('Tersedia');
+    expect(available10.isFull).toBe(false);
+    expect(available10.occupancyPercent).toBe(0);
+
+    // 7/10 slots available -> Tersedia (30% occupied)
+    const available7 = getParkingStatusGrade(7, 10);
+    expect(available7.status).toBe('Tersedia');
+    expect(available7.isFull).toBe(false);
+    expect(available7.occupancyPercent).toBe(30);
+
+    // 2/10 slots available -> Hampir Penuh (80% occupied)
+    const nearFull = getParkingStatusGrade(2, 10);
+    expect(nearFull.status).toBe('Hampir Penuh');
+    expect(nearFull.isFull).toBe(false);
+    expect(nearFull.occupancyPercent).toBe(80);
+
+    // 0/10 slots available -> Penuh (100% occupied, gate locked)
+    const full = getParkingStatusGrade(0, 10);
+    expect(full.status).toBe('Penuh');
+    expect(full.isFull).toBe(true);
+    expect(full.occupancyPercent).toBe(100);
   });
 });
 

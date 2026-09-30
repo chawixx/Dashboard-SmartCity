@@ -61,6 +61,26 @@ export interface TelemetryData {
   relay2?: boolean;
   relay3?: boolean;
   relay4?: boolean;
+  parking_total_slots?: number;
+  parking_occupied_slots?: number;
+  parking_available_slots?: number;
+  is_parking_full?: boolean;
+  entry_gate_open?: boolean;
+  exit_gate_open?: boolean;
+  ir_entry_detected?: boolean;
+  ir_exit_detected?: boolean;
+  parking?: ParkingData;
+}
+
+export interface ParkingData {
+  total_slots: number;
+  occupied_slots: number;
+  available_slots: number;
+  is_full: boolean;
+  entry_gate_open?: boolean;
+  exit_gate_open?: boolean;
+  ir_entry_detected?: boolean;
+  ir_exit_detected?: boolean;
 }
 
 export type DeviceStatus = 'online' | 'offline' | 'unknown';
@@ -84,4 +104,7 @@ export const TELEMETRY_LIMITS = {
   water_level_cm: { min: 0, max: 500 },
   water_distance_cm: { min: 0, max: 500 },
   ldr_raw: { min: 0, max: 4095 },
+  parking_total_slots: { min: 1, max: 100 },
+  parking_occupied_slots: { min: 0, max: 100 },
+  parking_available_slots: { min: 0, max: 100 },
 } as const;

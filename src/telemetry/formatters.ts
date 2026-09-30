@@ -410,3 +410,68 @@ export function getAmbientLightGrade(
     percent: brightnessPercent,
   };
 }
+
+export interface ParkingStatusGrade {
+  status: 'Tersedia' | 'Hampir Penuh' | 'Penuh';
+  label: string;
+  badgeText: string;
+  color: string;
+  bgColor: string;
+  borderColor: string;
+  description: string;
+  isFull: boolean;
+  occupancyPercent: number;
+}
+
+/**
+ * Evaluates parking slot vacancy into human-readable occupancy tier.
+ */
+export function getParkingStatusGrade(
+  availableSlots: number = 10,
+  totalSlots: number = 10
+): ParkingStatusGrade {
+  const safeTotal = Math.max(1, totalSlots);
+  const safeAvailable = Math.max(0, Math.min(safeTotal, availableSlots));
+  const occupied = safeTotal - safeAvailable;
+  const occupancyPercent = Math.round((occupied / safeTotal) * 100);
+
+  if (safeAvailable === 0) {
+    return {
+      status: 'Penuh',
+      label: 'Kapasitas Penuh (Gate Locked)',
+      badgeText: 'PARKIR PENUH',
+      color: '#f43f5e',
+      bgColor: 'rgba(244, 63, 94, 0.15)',
+      borderColor: 'rgba(244, 63, 94, 0.45)',
+      description: 'Seluruh 10 slot parkir terisi. Palang masuk otomatis ditutup hingga ada kendaraan keluar.',
+      isFull: true,
+      occupancyPercent: 100,
+    };
+  }
+
+  if (safeAvailable <= 2) {
+    return {
+      status: 'Hampir Penuh',
+      label: 'Hampir Penuh',
+      badgeText: 'HAMPIR PENUH',
+      color: '#f59e0b',
+      bgColor: 'rgba(245, 158, 11, 0.15)',
+      borderColor: 'rgba(245, 158, 11, 0.45)',
+      description: `Hanya tersisa ${safeAvailable} slot parkir kosong. Disarankan mencari alternatif jika arus tinggi.`,
+      isFull: false,
+      occupancyPercent,
+    };
+  }
+
+  return {
+    status: 'Tersedia',
+    label: 'Tersedia',
+    badgeText: 'SLOT TERSEDIA',
+    color: '#10b981',
+    bgColor: 'rgba(16, 185, 129, 0.12)',
+    borderColor: 'rgba(16, 185, 129, 0.35)',
+    description: `${safeAvailable} dari ${safeTotal} slot parkir siap digunakan pengunjung kawasan Alun-Alun Tegal.`,
+    isFull: false,
+    occupancyPercent,
+  };
+}

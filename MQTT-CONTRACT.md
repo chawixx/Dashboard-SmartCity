@@ -105,6 +105,14 @@ aethersense/{device_id}/telemetry
   "ambient_light": "Terang",
   "is_dark": false,
   "lighting_mode": "auto",
+  "parking_total_slots": 10,
+  "parking_occupied_slots": 3,
+  "parking_available_slots": 7,
+  "is_parking_full": false,
+  "entry_gate_open": false,
+  "exit_gate_open": false,
+  "ir_entry_detected": false,
+  "ir_exit_detected": false,
   "relays": {
     "relay1": false,
     "relay2": false,
@@ -144,6 +152,14 @@ aethersense/{device_id}/telemetry
 | `ambient_light` | `string` (opt)| — | `Terang` (<3000 ADC), `Gelap` (>3000 ADC) | Human-readable ambient lighting classification (2 kondisi: <3000 mati/terang, >3000 menyala/gelap). |
 | `is_dark` | `boolean` (opt)| — | `true` (>3000 ADC) / `false` (<=3000 ADC) | Flag kondisi gelap untuk pemicu otomatis relay lampu (Menyala jika true). |
 | `lighting_mode` | `string` (opt)| — | `auto` / `manual` | Mode operasi penerangan kota (Auto LDR vs Manual Web). |
+| `parking_total_slots` | `number` (opt)| slot | $1 \dots 100$ | Total kuota kapasitas lahan parkir (default 10 slot). |
+| `parking_occupied_slots`| `number` (opt)| slot | $0 \dots 100$ | Jumlah kendaraan terparkir saat ini. |
+| `parking_available_slots`| `number` (opt)| slot | $0 \dots 100$ | Sisa kuota lahan parkir kosong. |
+| `is_parking_full` | `boolean` (opt)| — | `true` / `false` | Status kapasitas penuh (palang masuk otomatis terkunci). |
+| `entry_gate_open` | `boolean` (opt)| — | `true` (90°) / `false` (0°) | Status posisi palang servo masuk (GPIO 21). |
+| `exit_gate_open` | `boolean` (opt)| — | `true` (90°) / `false` (0°) | Status posisi palang servo keluar (GPIO 47). |
+| `ir_entry_detected` | `boolean` (opt)| — | `true` / `false` | Deteksi rintangan kendaraan pada sensor IR masuk (GPIO 1). |
+| `ir_exit_detected` | `boolean` (opt)| — | `true` / `false` | Deteksi rintangan kendaraan pada sensor IR keluar (GPIO 2). |
 | `wifi_rssi_dbm` | `number` | dBm | $-100 \dots 0$ | Wi-Fi Received Signal Strength Indicator. |
 | `relays` | `object` (opt)| — | `{ relay1..4: boolean }` | Status aktif/padam seluruh 4 kanal relay LED kota. |
 | `relay1` | `boolean` (opt)| — | `true` (ON) / `false` (OFF) | Sektor 01: Kawasan Alun-Alun & Monumen (IN1 -> GPIO 38). |
@@ -161,6 +177,17 @@ export interface RelayStates {
   relay2: boolean;
   relay3: boolean;
   relay4: boolean;
+}
+
+export interface ParkingData {
+  total_slots: number;
+  occupied_slots: number;
+  available_slots: number;
+  is_full: boolean;
+  entry_gate_open: boolean;
+  exit_gate_open: boolean;
+  ir_entry_detected: boolean;
+  ir_exit_detected: boolean;
 }
 
 export interface TelemetryData {
@@ -181,6 +208,19 @@ export interface TelemetryData {
   water_level_cm?: number;
   flood_status?: FloodStatus;
   is_flood_warning?: boolean;
+  ldr_raw?: number;
+  ambient_light?: string;
+  is_dark?: boolean;
+  lighting_mode?: 'auto' | 'manual';
+  parking_total_slots?: number;
+  parking_occupied_slots?: number;
+  parking_available_slots?: number;
+  is_parking_full?: boolean;
+  entry_gate_open?: boolean;
+  exit_gate_open?: boolean;
+  ir_entry_detected?: boolean;
+  ir_exit_detected?: boolean;
+  parking?: ParkingData;
   relays?: RelayStates;
   relay1?: boolean;
   relay2?: boolean;
@@ -275,5 +315,53 @@ The firmware also supports plain ASCII text commands for testing via CLI / termi
 * `RELAY3_ON` / `RELAY3_OFF` (Sektor 3 / GPIO 40)
 * `RELAY4_ON` / `RELAY4_OFF` (Sektor 4 / GPIO 41)
 * `ALL_ON` / `ALL_OFF` (Seluruh 4 Sektor)
+
+---
+
+## 8. Smart Parking System Protocol (10 Slots & Dual-Gate Optical Barrier)
+
+### 8.1 Hardware Pin Mapping & Logic
+| Periferal | ESP32-S3 GPIO | Tipe Sinyal | Logika & Karakteristik |
+| :--- | :--- | :--- | :--- |
+| **IR Obstacle Masuk** | **GPIO 1** | Digital Input (`INPUT_PULLUP`) | `LOW` = Objek/Mobil Terdeteksi, `HIGH` = Bebas/Clear |
+| **IR Obstacle Keluar** | **GPIO 2** | Digital Input (`INPUT_PULLUP`) | `LOW` = Objek/Mobil Terdeteksi, `HIGH` = Bebas/Clear |
+| **Servo Palang Masuk** | **GPIO 21** | PWM Output (ESP32Servo 50Hz) | `0°` = Palang Tertutup, `90°` = Palang Terbuka |
+| **Servo Palang Keluar**| **GPIO 47** | PWM Output (ESP32Servo 50Hz) | `0°` = Palang Tertutup, `90°` = Palang Terbuka |
+
+> [!IMPORTANT]
+> **Power Supply Servo:** 2 unit servo SG90 wajib diberi daya dari regulator 5V eksternal mandiri (arus puncak ~800mA) dengan ground terhubung (*common ground*) ke ESP32-S3 untuk menghindari brownout reset pada mikrokontroler.
+
+### 8.2 Otomatisasi Palang & Logika Kuota (Non-Blocking State Machine)
+1. **Kendaraan Masuk:**
+   * Deteksi `IR_ENTRY_PIN == LOW`.
+   * Jika kuota parkir masih tersedia (`occupiedParkingSlots < TOTAL_PARKING_SLOTS`), palang masuk membuka ke 90° (`servoEntry.write(90)`).
+   * Jika kuota penuh (10/10), palang tetap terkunci di 0° dan indikator penolakan aktif.
+   * Saat kendaraan selesai melintasi sensor (`IR_ENTRY_PIN == HIGH`) ditambah jeda lintasan aman 1500ms, palang masuk menutup kembali (`0°`), jumlah slot terisi bertambah 1 (`occupied++`), dan telemetri langsung dipublikasikan.
+2. **Kendaraan Keluar:**
+   * Deteksi `IR_EXIT_PIN == LOW`.
+   * Palang keluar otomatis membuka ke 90° (`servoExit.write(90)`).
+   * Saat kendaraan selesai melintasi sensor ditambah jeda lintasan 1500ms, palang keluar menutup kembali (`0°`), jumlah slot terisi berkurang 1 (minimum 0), dan telemetri langsung dipublikasikan.
+
+### 8.3 Reset Kuota Slot Command (Kalibrasi / Testing Manual)
+Perintah reset kuota dikirim dari tombol web dashboard ke topic command:
+```text
+aethersense/{device_id}/command
+```
+
+**Payload JSON:**
+```json
+{
+  "type": "parking_reset",
+  "occupied": 0,
+  "timestamp": 1790041270
+}
+```
+
+**Direct Fallback Text Command:**
+```text
+PARK_RESET
+```
+Saat diterima oleh firmware, `occupiedParkingSlots` diatur kembali ke `0`, kedua servo dipastikan tertutup (`0°`), dan data telemetri mutakhir langsung dipancarkan ke broker MQTT.
+
 
 

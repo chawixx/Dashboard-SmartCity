@@ -476,4 +476,105 @@ describe('LDR Ambient Light Sensor & Lighting Mode Parser (PRD / Contract Update
   });
 });
 
+describe('Smart Parking Telemetry Parser (10-Slot & Dual-Gate)', () => {
+  it('parses flat parking fields correctly', () => {
+    const payload = JSON.stringify({
+      device_id: 'esp32s3-PARKTEST',
+      sequence: 20,
+      timestamp: 1790000000,
+      uptime_s: 200,
+      temperature_c: 28.5,
+      humidity_percent: 67.0,
+      mq135_raw: 750,
+      mq135_adc_mv: 580,
+      mq135_sensor_mv: 966.7,
+      wifi_rssi_dbm: -55,
+      parking_total_slots: 10,
+      parking_occupied_slots: 3,
+      parking_available_slots: 7,
+      is_parking_full: false,
+      entry_gate_open: true,
+      exit_gate_open: false,
+      ir_entry_detected: true,
+      ir_exit_detected: false,
+    });
+
+    const result = parseTelemetryPayload(payload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.parking_total_slots).toBe(10);
+      expect(result.data.parking_occupied_slots).toBe(3);
+      expect(result.data.parking_available_slots).toBe(7);
+      expect(result.data.is_parking_full).toBe(false);
+      expect(result.data.entry_gate_open).toBe(true);
+      expect(result.data.exit_gate_open).toBe(false);
+      expect(result.data.ir_entry_detected).toBe(true);
+      expect(result.data.ir_exit_detected).toBe(false);
+      expect(result.data.parking).toBeDefined();
+      expect(result.data.parking?.occupied_slots).toBe(3);
+      expect(result.data.parking?.available_slots).toBe(7);
+    }
+  });
+
+  it('parses nested parking object and populates flat fields', () => {
+    const payload = JSON.stringify({
+      device_id: 'esp32s3-PARKTEST',
+      sequence: 21,
+      timestamp: 1790000005,
+      uptime_s: 205,
+      temperature_c: 28.5,
+      humidity_percent: 67.0,
+      mq135_raw: 750,
+      mq135_adc_mv: 580,
+      mq135_sensor_mv: 966.7,
+      wifi_rssi_dbm: -55,
+      parking: {
+        total_slots: 10,
+        occupied_slots: 10,
+        available_slots: 0,
+        is_full: true,
+        entry_gate_open: false,
+        exit_gate_open: true,
+        ir_entry_detected: false,
+        ir_exit_detected: true,
+      },
+    });
+
+    const result = parseTelemetryPayload(payload);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.parking_total_slots).toBe(10);
+      expect(result.data.parking_occupied_slots).toBe(10);
+      expect(result.data.parking_available_slots).toBe(0);
+      expect(result.data.is_parking_full).toBe(true);
+      expect(result.data.entry_gate_open).toBe(false);
+      expect(result.data.exit_gate_open).toBe(true);
+      expect(result.data.ir_entry_detected).toBe(false);
+      expect(result.data.ir_exit_detected).toBe(true);
+    }
+  });
+
+  it('rejects out of range parking slot counts', () => {
+    const payload = JSON.stringify({
+      device_id: 'esp32s3-PARKTEST',
+      sequence: 22,
+      timestamp: 1790000010,
+      uptime_s: 210,
+      temperature_c: 28.5,
+      humidity_percent: 67.0,
+      mq135_raw: 750,
+      mq135_adc_mv: 580,
+      mq135_sensor_mv: 966.7,
+      wifi_rssi_dbm: -55,
+      parking_occupied_slots: 999,
+    });
+
+    const result = parseTelemetryPayload(payload);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('parking_occupied_slots');
+    }
+  });
+});
+
 
