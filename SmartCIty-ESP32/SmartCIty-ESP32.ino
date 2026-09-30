@@ -521,6 +521,7 @@ void connectMQTT() {
 
     // Set server directly by IP address to bypass socket DNS lookup failures
     mqttClient.setServer(brokerIp, MQTT_PORT);
+    mqttClient.setBufferSize(2560);
 
     bool connected = mqttClient.connect(
         deviceId.c_str(),
@@ -980,7 +981,7 @@ void publishTelemetry() {
 
     String payload;
 
-    payload.reserve(1024);
+    payload.reserve(2560);
 
     payload += "{";
 
@@ -1121,17 +1122,7 @@ void publishTelemetry() {
     payload += "\"entry_gate_open\":"; payload += isEntryGateOpen ? "true" : "false"; payload += ",";
     payload += "\"exit_gate_open\":"; payload += isExitGateOpen ? "true" : "false"; payload += ",";
     payload += "\"ir_entry_detected\":"; payload += isIrEntryDetected ? "true" : "false"; payload += ",";
-    payload += "\"ir_exit_detected\":"; payload += isIrExitDetected ? "true" : "false"; payload += ",";
-    payload += "\"parking\":{";
-    payload += "\"total_slots\":"; payload += String(TOTAL_PARKING_SLOTS); payload += ",";
-    payload += "\"occupied_slots\":"; payload += String(occupiedParkingSlots); payload += ",";
-    payload += "\"available_slots\":"; payload += String(availableParkingSlots); payload += ",";
-    payload += "\"is_full\":"; payload += isParkingFull ? "true" : "false"; payload += ",";
-    payload += "\"entry_gate_open\":"; payload += isEntryGateOpen ? "true" : "false"; payload += ",";
-    payload += "\"exit_gate_open\":"; payload += isExitGateOpen ? "true" : "false"; payload += ",";
-    payload += "\"ir_entry_detected\":"; payload += isIrEntryDetected ? "true" : "false"; payload += ",";
     payload += "\"ir_exit_detected\":"; payload += isIrExitDetected ? "true" : "false";
-    payload += "}";
 
     payload += "}";
 
@@ -1143,19 +1134,16 @@ void publishTelemetry() {
         );
 
     if (published) {
-
-        Serial.println();
-        Serial.println(
-            "Telemetry published:"
-        );
-
+        Serial.print("[MQTT] Telemetry published successfully (");
+        Serial.print(payload.length());
+        Serial.println(" bytes):");
         Serial.println(payload);
-
     } else {
-
-        Serial.println(
-            "ERROR: MQTT publish failed."
-        );
+        Serial.print("[MQTT] ERROR: Publish failed! Payload: ");
+        Serial.print(payload.length());
+        Serial.print(" bytes, Buffer limit: ");
+        Serial.print(mqttClient.getBufferSize());
+        Serial.println(" bytes.");
     }
 }
 
@@ -1307,6 +1295,8 @@ void setup() {
     servoEntry.attach(SERVO_ENTRY_PIN, 500, 2400);
     servoEntry.write(SERVO_CLOSED_ANGLE);
 
+    delay(100);
+
     servoExit.setPeriodHertz(50);
     servoExit.attach(SERVO_EXIT_PIN, 500, 2400);
     servoExit.write(SERVO_CLOSED_ANGLE);
@@ -1324,9 +1314,9 @@ void setup() {
 
     mqttClient.setKeepAlive(30);
 
-    mqttClient.setBufferSize(1024);
+    mqttClient.setBufferSize(2560);
 
-    wifiClient.setTimeout(10);
+    wifiClient.setTimeout(5000);
 
     // --------------------------------------------------------
     // NTP
