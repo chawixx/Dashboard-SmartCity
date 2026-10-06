@@ -65,8 +65,8 @@ const unsigned long GATE_PASS_TIMEOUT_MS = 1500; // Waktu jeda aman mobil lewat 
 // WIFI CONFIGURATION
 // ============================================================
 
-const char* WIFI_SSID = "Doktor Tije Digital";
-const char* WIFI_PASSWORD = "doktortj2025";
+const char* WIFI_SSID = "WIFI_NAME";
+const char* WIFI_PASSWORD = "WIFI_PASS";
 
 // ============================================================
 // HIVEMQ PUBLIC BROKER
